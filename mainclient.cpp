@@ -1,5 +1,7 @@
 #include "mainclient.h"
 #include "ui_mainclient.h"
+#include "dialog2.h"
+#include "systeminfo.h"
 
 /* STL */
 #include <windows.h>
@@ -36,23 +38,52 @@ float GetCPULoad()
 /* QT Framework */
 #include <QMessageBox>
 #include <QTime>
+#include <QHostInfo>
+#include <QFIle>
+#include <QSettings>
+
 
 MainClient::MainClient(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainClient)
 {
+    m_sSettingsFile = QApplication::applicationDirPath().left(1) + ":/config.ini";
+    loadSettings();
+
     ui->setupUi(this);
+    d =  new Dialog2(this, this->address, this->port);
+    sysinfo =  new SystemInfo(this);
+
+    connect(ui->SystemInfoPB, SIGNAL(clicked()), SLOT(showinfo()));
 
 	mTcpSocket = new QTcpSocket(this);
-	mTcpSocket->connectToHost("localhost", 32094);
+    mTcpSocket->connectToHost(address, port);
+
+    connect(ui->ping, SIGNAL(clicked(bool)), SLOT(slotSendToServer(bool)));
+
+    connect(mTcpSocket, SIGNAL(disconnected()), SLOT(slotDisconected()));
 
 	connect(mTcpSocket, SIGNAL(connected()), SLOT(slotConnected()));
 	connect(mTcpSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
+
 	connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
 			   this, SLOT(slotError(QAbstractSocket::SocketError)));
 
-	//connect(ui->LineEdit, SIGNAL(returnPressed()), this, SLOT(slotSendToServer(bool)));
-	connect(ui->SendButton, SIGNAL(clicked(bool)), SLOT(slotSendToServer(bool)));
+    connect(ui->exitPB, SIGNAL(clicked(bool)), SLOT(slotSendToServer(bool)));
+
+    connect(this, SIGNAL(xclicked()), SLOT(slotSendToServer()));
+    //connect(this, SIGNAL(closing()), SLOT(slotSendToServer()));
+    //connect(this, SIGNAL(close()), SLOT(slotSender()));
+
+    connect(this, SIGNAL(closing()), SLOT(slotSender()));
+    connect(this, SIGNAL(xclicked()), SLOT(slotSendToServer()));
+
+    connect(this, SIGNAL(error()), SLOT(slotConfig()));
+
+    connect(ui->configPB, SIGNAL(clicked()), SLOT(slotConfig()));
+
+    connect(ui->reconnectPB, SIGNAL(clicked()), SLOT(slotConnect()));
+    connect(this, SIGNAL(reconnect()), SLOT(slotConnect()));
 	iNextBlocksize = 0;
 }
 
@@ -88,7 +119,7 @@ void MainClient::slotReadyRead()
 
 void MainClient::slotError(QAbstractSocket::SocketError err)
 {
-	QString strError = "Error: " + (err == QAbstractSocket::HostNotFoundError ?
+    QString strError = QTime::currentTime().toString() + " Error: " + (err == QAbstractSocket::HostNotFoundError ?
 									"The host was not found." :
 									err == QAbstractSocket::RemoteHostClosedError ?
 									"The remote host is closed." :
@@ -97,23 +128,94 @@ void MainClient::slotError(QAbstractSocket::SocketError err)
 									QString(mTcpSocket->errorString())
 									);
 	ui->listWidget->addItem(strError);
+    emit error();
 }
+
+
 
 void MainClient::slotSendToServer(bool)
 {
-	QByteArray  arrBlock;
-	QDataStream out(&arrBlock, QIODevice::WriteOnly);
-	out.setVersion(QDataStream::Qt_5_5);
-	out << quint16(0) << QTime::currentTime() << ui->LineEdit->text();
+    qDebug()<<"send message";
+    QString Message = "";
+    QObject* obj = sender();
+      if( obj == ui->exitPB )
+      {
+         Message = "Program closed by operator";
+      }
+      else if (obj == ui->ping) {
+          Message = "PINGED";
+      }
 
-	out.device()->seek(0);
-	out << quint16(arrBlock.size() - sizeof(quint16));
+      QByteArray  arrBlock;
+      QString Name = QHostInfo::localHostName();
 
-	mTcpSocket->write(arrBlock);
-	ui->LineEdit->setText("");
+      QDataStream out(&arrBlock, QIODevice::WriteOnly);
+      out.setVersion(QDataStream::Qt_5_5);
+      out << quint16(0) << QTime::currentTime() << Name << Message;
+
+      out.device()->seek(0);
+      out << quint16(arrBlock.size() - sizeof(quint16));
+
+      mTcpSocket->write(arrBlock);
+
+      if( obj == ui->exitPB or obj == this)
+      {
+         //emit(this->close());
+      }
+      emit(this->messaged());
 }
 
 void MainClient::slotConnected()
 {
-	ui->listWidget->addItem("Received the connected() signal");
+    ui->status->setText("Подключено");
+}
+
+void MainClient::slotDisconected()
+{
+    ui->status->setText("Не подключено");
+}
+
+void MainClient::slotConnect(){
+    mTcpSocket->disconnectFromHost();
+    loadSettings();
+    mTcpSocket->connectToHost(address, port);
+}
+
+void MainClient::slotSender(){
+    QObject* obj = sender();
+    ui->label_2->setText(obj->objectName());
+    qDebug() << obj->objectName();
+}
+
+void MainClient::slotConfig(){
+    // вызов диалогового окна для ввода порта, адреса и пароля
+    if (!d->isVisible() and this->isVisible()){
+        d->exec();
+        if (d->Accepted){
+            emit(reconnect());
+        }
+    }
+}
+
+
+#include <QCloseEvent>
+void MainClient::closeEvent (QCloseEvent *event)
+{
+   emit(xclicked());
+}
+
+
+void MainClient::loadSettings()
+{
+ QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
+ address = settings.value("current/address", "localhost").toString();
+ port = settings.value("current/port", 32094).toInt();
+ qDebug()<<address+" MC";
+ //ui->label_4->setText(this->port);
+}
+
+void MainClient::showinfo(){
+    if (!sysinfo->isVisible()){
+        sysinfo->exec();
+    }
 }

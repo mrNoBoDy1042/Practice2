@@ -25,10 +25,21 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
         main.cpp \
-        mainclient.cpp
+        mainclient.cpp \
+    dialog2.cpp \
+    systeminfo.cpp \
+    login.cpp
 
 HEADERS += \
-        mainclient.h
+        mainclient.h \
+    dialog2.h \
+    systeminfo.h \
+    login.h
 
 FORMS += \
-        mainclient.ui
+        mainclient.ui \
+    dialog2.ui \
+    systeminfo.ui \
+    login.ui
+
+DISTFILES +=

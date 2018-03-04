@@ -1,0 +1,10 @@
+{
+  "default": {
+    "address": "localhost",
+    "port": 32094
+  },
+  "curent": {
+    "address": "",
+    "port": 0
+  }
+}
