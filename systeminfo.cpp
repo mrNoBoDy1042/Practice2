@@ -1,37 +1,32 @@
 #include "systeminfo.h"
 #include "ui_systeminfo.h"
-//#include <windows.h>
-//#include <sstream>
+#include <sstream>
+#include <string>
+#include <QFile>
 
 SystemInfo::SystemInfo(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::SystemInfo)
 {
-
-//    std::ostringstream stream;
-
-//    SYSTEM_INFO siSysInfo;
-//    GetSystemInfo(&siSysInfo);
-
-//    MEMORYSTATUSEX statex;
-//    statex.dwLength = sizeof (statex);
-//    GlobalMemoryStatusEx (&statex);
-
     ui->setupUi(this);
 
-    ui->cpuName->setText(QSysInfo::currentCpuArchitecture());
-    ui->OSName->setText(QSysInfo::productType() + " " + QSysInfo::productVersion());
-    ui->PCName->setText(QHostInfo::localHostName());
+    QLabel* labels[6] = {ui->PCName, ui->OSName, ui->label_7, ui->cpuName, ui->gpuName, ui->OperMemory};
 
-//    stream << statex.dwMemoryLoad;
-//    std::string str = stream.str();
-
-//    ui->OperMemory->setText("qewd");
-
-//    printf("  Number of processors: %u\n",
-//       siSysInfo.dwNumberOfProcessors);
-//    printf("  Processor type: %u\n", siSysInfo.dwProcessorType);
-//    siSysInfo.wProcessorArchitecture
+    QString file = QApplication::applicationDirPath() + "/../config.txt";
+    QFile inputFile(file);
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+       QTextStream in(&inputFile);
+       in.setCodec("UTF-8");
+       qint8 i = 0;
+       while (!in.atEnd())
+       {
+          QString line = in.readLine();
+          labels[i]->setText(line);
+          i++;
+       }
+       inputFile.close();
+    }
 }
 
 SystemInfo::~SystemInfo()

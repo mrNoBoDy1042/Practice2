@@ -1,10 +1,40 @@
+/**************************************************************
+#*  Тема: Разработать программу для формирования и отображения
+#*  хода выполнения технических процессов
+#*  Язык: С++
+#*  Среда разработки: Qt creator
+#*  Разработал: Бычков В.П.
+#*  Дата: 20.03.2018
+#***************************************************************
+#*  Тема: Разработать программу для  формирования и отображения
+#*  хода выполнения технических процессов
+#****************************************************************
+#*  Подпрограммы, используемые в программе:
+#*       main - процедура для вывода формы login;
+#*       slotLaunch - процедура для запуска и обработки
+#*       сторонних процессов;
+#*       slotSendToServer - процедура для отправки сообщений на
+#*       сервер;
+#*       loadSettings - процедура для загрузки данных для
+#*       подключения к серверу;
+#*       slotConnect - процедура для подключения к серверу;
+#*       slotError - процедура для обработки ошибок при подключении.
+#******************************************************************/
+
 #include "mainclient.h"
 #include "ui_mainclient.h"
 #include "dialog2.h"
 #include "systeminfo.h"
-
-/* STL */
+#include <QProcess>
+#include <QDir>
 #include <windows.h>
+#include <QMessageBox>
+#include <QTime>
+#include <QHostInfo>
+#include <QFIle>
+#include <QSettings>
+#include <QCloseEvent>
+#define DIV 1024
 
 static float CalculateCPULoad(unsigned long long idleTicks, unsigned long long totalTicks)
 {
@@ -34,15 +64,6 @@ float GetCPULoad()
    return GetSystemTimes(&idleTime, &kernelTime, &userTime) ? CalculateCPULoad(FileTimeToInt64(idleTime), FileTimeToInt64(kernelTime)+FileTimeToInt64(userTime)) : -1.0f;
 }
 
-
-/* QT Framework */
-#include <QMessageBox>
-#include <QTime>
-#include <QHostInfo>
-#include <QFIle>
-#include <QSettings>
-
-
 MainClient::MainClient(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainClient)
@@ -51,40 +72,88 @@ MainClient::MainClient(QWidget *parent) :
     loadSettings();
 
     ui->setupUi(this);
-    d =  new Dialog2(this, this->address, this->port);
-    sysinfo =  new SystemInfo(this);
 
-    connect(ui->SystemInfoPB, SIGNAL(clicked()), SLOT(showinfo()));
+    QProcess *process = new QProcess(this);
+    QString GetConfig = QApplication::applicationDirPath() + "/../GetConfig.exe";
+    process->start(GetConfig);
+    process->waitForFinished(1000);
 
-	mTcpSocket = new QTcpSocket(this);
+    mTcpSocket = new QTcpSocket(this);
     mTcpSocket->connectToHost(address, port);
 
-    connect(ui->ping, SIGNAL(clicked(bool)), SLOT(slotSendToServer(bool)));
+    this->address = address;
+    this->port = port;
 
+    ui->setupUi(this);
+    ui->addressLine->setText(this->address);
+    ui -> portLine -> setText(QString::number(this -> port));
+    ui->portLine->setValidator( new QIntValidator(0, 65535, this) );
+
+    ui->ping->setCheckable(true);
+    ui->ping->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
+                            "QPushButton:checked { background-color: #F7D900; color:#242424};");
+    ui->SystemInfoPB->setCheckable(true);
+    ui->SystemInfoPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
+                            "QPushButton:checked { background-color: #F7D900; color:#242424};");
+    ui->configPB->setCheckable(true);
+    ui->configPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
+                            "QPushButton:checked { background-color: #F7D900; color:#242424};");
+
+    ui->exitPB->setCheckable(true);
+    ui->exitPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
+                            "QPushButton:pressed { background-color: #F7D900; color:#242424};");
+    ui->launchPB->setCheckable(true);
+    ui->launchPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
+                            "QPushButton:pressed { background-color: #F7D900; color:#242424};");
+
+    ui->reconnectPB->setCheckable(true);
+    ui->reconnectPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                            "border-top-width: 1px; padding:0px; margin:0px; color:#FFF}"
+                            "QPushButton:pressed { background-color: #F7D900; color:#242424};");
+
+    QLabel* labels[6] = {ui->PCName, ui->OSName, ui->label_10, ui->cpuName, ui->gpuName, ui->OperMemory};
+
+    QString file = QApplication::applicationDirPath() + "/../config.txt";
+    QFile inputFile(file);
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+       QTextStream in(&inputFile);
+       in.setCodec("UTF-8");
+       qint8 i = 0;
+       while (!in.atEnd())
+       {
+          QString line = in.readLine();
+          labels[i]->setText(line);
+          i++;
+       }
+       inputFile.close();
+    }
+
+    connect(ui->setdefPB, SIGNAL(clicked()), SLOT(slotSetDefault()));
+    connect(ui->connectPB, SIGNAL(clicked()), SLOT(saveSettings()));
+    connect(ui->SystemInfoPB, SIGNAL(clicked()), SLOT(showinfo()));
+    connect(ui->ping, SIGNAL(clicked()), SLOT(slotMainPage()));
     connect(mTcpSocket, SIGNAL(disconnected()), SLOT(slotDisconected()));
-
 	connect(mTcpSocket, SIGNAL(connected()), SLOT(slotConnected()));
 	connect(mTcpSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
-
 	connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
 			   this, SLOT(slotError(QAbstractSocket::SocketError)));
-
-    connect(ui->exitPB, SIGNAL(clicked(bool)), SLOT(slotSendToServer(bool)));
-
-    connect(this, SIGNAL(xclicked()), SLOT(slotSendToServer()));
-    //connect(this, SIGNAL(closing()), SLOT(slotSendToServer()));
-    //connect(this, SIGNAL(close()), SLOT(slotSender()));
-
+    connect(ui->exitPB, SIGNAL(clicked()), SLOT(slotAboutToExit()));
     connect(this, SIGNAL(closing()), SLOT(slotSender()));
-    connect(this, SIGNAL(xclicked()), SLOT(slotSendToServer()));
-
-    connect(this, SIGNAL(error()), SLOT(slotConfig()));
-
+    connect(this, SIGNAL(closing()), SLOT(slotSendToServer()));
+    connect(this, SIGNAL(error(QString)), SLOT(slotHint(QString)));
     connect(ui->configPB, SIGNAL(clicked()), SLOT(slotConfig()));
-
     connect(ui->reconnectPB, SIGNAL(clicked()), SLOT(slotConnect()));
     connect(this, SIGNAL(reconnect()), SLOT(slotConnect()));
+    connect(ui->launchPB, SIGNAL(clicked()), SLOT(slotLaunch()));
+
 	iNextBlocksize = 0;
+    ui->ping->click();
 }
 
 MainClient::~MainClient()
@@ -117,6 +186,13 @@ void MainClient::slotReadyRead()
 	}
 }
 
+/******************************************************
+ *  slotError - процедура для обработки ошибок при
+ * подключении к серверу.
+ ******************************************************
+ *  Формальный параметр:
+ *       strError - строка, хранящая информацию об ошибке.
+ ******************************************************/
 void MainClient::slotError(QAbstractSocket::SocketError err)
 {
     QString strError = QTime::currentTime().toString() + " Error: " + (err == QAbstractSocket::HostNotFoundError ?
@@ -128,22 +204,26 @@ void MainClient::slotError(QAbstractSocket::SocketError err)
 									QString(mTcpSocket->errorString())
 									);
 	ui->listWidget->addItem(strError);
-    emit error();
+    emit error(strError);
 }
 
-
-
-void MainClient::slotSendToServer(bool)
+/******************************************************
+ *  slotSendToServer - процедура для отправки сообщений
+ * на сервер.
+ ******************************************************
+ *  Формальные параметры:
+ *       message - указатель на экземпляр класса QProcess;
+ *       obj - путь к исполняемому файлу;
+ *       arrBlock - массив байт для отправки сообщения;
+ *       Name - имя сервера.
+ ******************************************************/
+void MainClient::slotSendToServer()
 {
-    qDebug()<<"send message";
     QString Message = "";
     QObject* obj = sender();
       if( obj == ui->exitPB )
       {
          Message = "Program closed by operator";
-      }
-      else if (obj == ui->ping) {
-          Message = "PINGED";
       }
 
       QByteArray  arrBlock;
@@ -162,7 +242,7 @@ void MainClient::slotSendToServer(bool)
       {
          //emit(this->close());
       }
-      emit(this->messaged());
+      //emit(this->messaged());
 }
 
 void MainClient::slotConnected()
@@ -175,6 +255,10 @@ void MainClient::slotDisconected()
     ui->status->setText("Не подключено");
 }
 
+
+/******************************************************
+ *  slotConnect - процедура для подключения к серверу.
+ ******************************************************/
 void MainClient::slotConnect(){
     mTcpSocket->disconnectFromHost();
     loadSettings();
@@ -183,39 +267,88 @@ void MainClient::slotConnect(){
 
 void MainClient::slotSender(){
     QObject* obj = sender();
-    ui->label_2->setText(obj->objectName());
+    //ui->label_2->setText(obj->objectName());
     qDebug() << obj->objectName();
 }
 
 void MainClient::slotConfig(){
-    // вызов диалогового окна для ввода порта, адреса и пароля
-    if (!d->isVisible() and this->isVisible()){
-        d->exec();
-        if (d->Accepted){
-            emit(reconnect());
-        }
+  ui->stackedWidget->setCurrentIndex(1);
+}
+
+void MainClient::closeEvent (QCloseEvent *event)
+{
+    QMessageBox::StandardButton resBtn = QMessageBox::question( this, "Закрыть приложение",
+                                                                tr("Вы уверены?\n"),
+                                                                QMessageBox::No | QMessageBox::Yes,
+                                                                QMessageBox::Yes);
+    if (resBtn != QMessageBox::Yes) {
+        event->ignore();
+    } else {
+        emit(closing());
+        event->accept();
     }
 }
 
-
-#include <QCloseEvent>
-void MainClient::closeEvent (QCloseEvent *event)
+void MainClient::slotAboutToExit()
 {
-   emit(xclicked());
+    close();
 }
 
-
+/******************************************************
+ *  loadSettings - процедура для загрузки данных
+ * подключения к серверу.
+ ******************************************************
+ *  Формальный параметр:
+ *       settings - объект, хранящий настройки подключения;
+ ******************************************************/
 void MainClient::loadSettings()
 {
- QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
- address = settings.value("current/address", "localhost").toString();
- port = settings.value("current/port", 32094).toInt();
- qDebug()<<address+" MC";
- //ui->label_4->setText(this->port);
+    QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
+    address = settings.value("current/address", "localhost").toString();
+    port = settings.value("current/port", 32094).toInt();
 }
 
 void MainClient::showinfo(){
-    if (!sysinfo->isVisible()){
-        sysinfo->exec();
-    }
+    ui->stackedWidget->setCurrentIndex(2);
+}
+
+void MainClient::slotMainPage(){
+    ui->stackedWidget->setCurrentIndex(0);
+}
+
+/******************************************************
+ *  slotLaunch - процедура для запуска и обработки
+ * соторнних процессов.
+ ******************************************************
+ *  Формальные параметры:
+ *       process - указатель на экземпляр класса QProcess;
+ *       file - путь к исполняемому файлу.
+ ******************************************************/
+void MainClient::slotLaunch(){
+    QProcess *process = new QProcess(this);
+    QString file = QApplication::applicationDirPath() + "/../TestUnit.exe";
+    process->start(file);
+    process->waitForFinished(30000);
+    qDebug()<<process->exitCode();
+}
+
+void MainClient::slotSetDefault()
+{
+    QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
+    this->address = settings.value("default/address", "localhost").toString();
+    this->port = settings.value("default/port", 32094).toInt();
+    ui->addressLine->setText(this->address);
+    ui->portLine->setText(QString::number(this->port));
+
+}
+
+void MainClient::saveSettings(){
+    QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
+    settings.setValue("current/port", ui->portLine->text());
+    settings.setValue("current/address", ui->addressLine->text());
+    //this->accept();
+}
+
+void MainClient::slotHint(QString err){
+    ui->label_2->setText(err);
 }

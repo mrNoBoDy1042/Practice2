@@ -20,12 +20,13 @@ Login::~Login()
 void Login::slotCancel(){
     this->reject();
 }
-
+/******************************************************
+ *  slotEnter - процедура для авторизации оператора.
+ ******************************************************/
 void Login::slotEnter(){
-    if(ui->lineEdit->text() != "" and ui->lineEdit_2->text() != "" and ui->lineEdit_3->text() != ""){
+    //if(ui->lineEdit->text() != "" and ui->lineEdit_2->text() != "" and ui->lineEdit_3->text() != ""){
         w = new MainClient();
         w->show();
         this->close();
-
-    }
+    //}
 }

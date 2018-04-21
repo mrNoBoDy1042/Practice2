@@ -12,8 +12,6 @@ Dialog2::Dialog2(QWidget *parent, QString address, int port) :
     this->address = address;
     this->port = port;
 
-
-
     ui->setupUi(this);
     ui->addressLine->setText(this->address);
     ui -> portLine -> setText(QString::number(this -> port));
@@ -28,6 +26,7 @@ Dialog2::~Dialog2()
 {
     delete ui;
 }
+
 void Dialog2::slotSetDefault()
 {
     QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
@@ -40,10 +39,10 @@ void Dialog2::slotSetDefault()
 
 void Dialog2::saveSettings()
 {
- QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
- settings.setValue("current/port", ui->portLine->text());
- settings.setValue("current/address", ui->addressLine->text());
- this->accept();
+    QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
+    settings.setValue("current/port", ui->portLine->text());
+    settings.setValue("current/address", ui->addressLine->text());
+    this->accept();
 }
 
 void Dialog2::slotCancel()

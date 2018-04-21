@@ -13,14 +13,26 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: #1D1F20;
+color: #FFF;</string>
+  </property>
   <widget class="QLabel" name="label">
    <property name="geometry">
     <rect>
-     <x>80</x>
+     <x>30</x>
      <y>20</y>
-     <width>151</width>
-     <height>16</height>
+     <width>261</width>
+     <height>21</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>14</pointsize>
+    </font>
+   </property>
+   <property name="frameShape">
+    <enum>QFrame::NoFrame</enum>
    </property>
    <property name="text">
     <string>Введите данные оператора</string>
@@ -35,6 +47,11 @@
      <height>13</height>
     </rect>
    </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
    <property name="text">
     <string>Имя</string>
    </property>
@@ -44,9 +61,14 @@
     <rect>
      <x>10</x>
      <y>130</y>
-     <width>47</width>
-     <height>13</height>
+     <width>81</width>
+     <height>16</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
    </property>
    <property name="text">
     <string>Фамилия</string>
@@ -58,8 +80,13 @@
      <x>10</x>
      <y>190</y>
      <width>47</width>
-     <height>13</height>
+     <height>16</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
    </property>
    <property name="text">
     <string>Отдел</string>
@@ -74,6 +101,12 @@
      <height>20</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">background-color:#27282A;
+  border-style: solid;
+  border-color: #FFF;
+  border-width: 1px;</string>
+   </property>
   </widget>
   <widget class="QLineEdit" name="lineEdit_2">
    <property name="geometry">
@@ -83,6 +116,12 @@
      <width>281</width>
      <height>20</height>
     </rect>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color:#27282A;
+  border-style: solid;
+  border-color: #FFF;
+  border-width: 1px;</string>
    </property>
   </widget>
   <widget class="QLineEdit" name="lineEdit_3">
@@ -94,15 +133,32 @@
      <height>20</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">background-color:#27282A;
+  border-style: solid;
+  border-color: #FFF;
+  border-width: 1px;</string>
+   </property>
   </widget>
   <widget class="QPushButton" name="pushButton">
    <property name="geometry">
     <rect>
-     <x>130</x>
+     <x>124</x>
      <y>270</y>
-     <width>75</width>
+     <width>81</width>
      <height>23</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color:#27282A;
+  border-style: solid;
+  border-color: #FFF;
+  border-width: 1px;</string>
    </property>
    <property name="text">
     <string>Вход</string>
@@ -113,9 +169,20 @@
     <rect>
      <x>210</x>
      <y>270</y>
-     <width>75</width>
+     <width>81</width>
      <height>23</height>
     </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>10</pointsize>
+    </font>
+   </property>
+   <property name="styleSheet">
+    <string notr="true">background-color:#27282A;
+  border-style: solid;
+  border-color: #FFF;
+  border-width: 1px;</string>
    </property>
    <property name="text">
     <string>Отмена</string>

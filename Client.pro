@@ -26,20 +26,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainclient.cpp \
-    dialog2.cpp \
-    systeminfo.cpp \
     login.cpp
 
 HEADERS += \
         mainclient.h \
-    dialog2.h \
-    systeminfo.h \
+    login.h \
     login.h
 
 FORMS += \
-        mainclient.ui \
-    dialog2.ui \
-    systeminfo.ui \
+    mainclient.ui \
     login.ui
 
-DISTFILES +=
+DISTFILES += \
+    TestUnit.exe

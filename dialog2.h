@@ -6,27 +6,27 @@
 #include <mainclient.h>
 
 namespace Ui {
-class Dialog2;
+    class Dialog2;
 }
 
 class Dialog2 : public QDialog
 {
     Q_OBJECT
 
-public:
-    explicit Dialog2(QWidget *parent = 0, QString address = "localhost", int port=32094);
-    QString address;
-    int port;
-    QString m_sSettingsFile;
-    ~Dialog2();
+    public:
+        explicit Dialog2(QWidget *parent = 0, QString address = "localhost", int port=32094);
+        QString address;
+        int port;
+        QString m_sSettingsFile;
+        ~Dialog2();
 
-private:
-    Ui::Dialog2 *ui;
+    private:
+        Ui::Dialog2 *ui;
 
-private slots:
-    void slotSetDefault();
-    void saveSettings();
-    void slotCancel();
+    private slots:
+        void slotSetDefault();
+        void saveSettings();
+        void slotCancel();
 
 };
 

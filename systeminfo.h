@@ -6,19 +6,19 @@
 #include <QHostInfo>
 
 namespace Ui {
-class SystemInfo;
+    class SystemInfo;
 }
 
 class SystemInfo : public QDialog
 {
     Q_OBJECT
 
-public:
-    explicit SystemInfo(QWidget *parent = 0);
-    ~SystemInfo();
+    public:
+        explicit SystemInfo(QWidget *parent = 0);
+        ~SystemInfo();
 
-private:
-    Ui::SystemInfo *ui;
+    private:
+        Ui::SystemInfo *ui;
 };
 
 #endif // SYSTEMINFO_H
