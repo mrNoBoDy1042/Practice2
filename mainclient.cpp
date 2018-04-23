@@ -27,7 +27,6 @@
 #include "systeminfo.h"
 #include <QProcess>
 #include <QDir>
-#include <windows.h>
 #include <QMessageBox>
 #include <QTime>
 #include <QHostInfo>
@@ -35,6 +34,25 @@
 #include <QSettings>
 #include <QCloseEvent>
 #define DIV 1024
+
+
+
+
+
+
+
+
+
+
+
+// cpu
+#include <thread>
+#include <windows.h>
+#include <stdio.h>
+#include <tchar.h>
+
+#define DIV 1024
+#define WIDTH 7
 
 static float CalculateCPULoad(unsigned long long idleTicks, unsigned long long totalTicks)
 {
@@ -50,11 +68,9 @@ static float CalculateCPULoad(unsigned long long idleTicks, unsigned long long t
    _previousIdleTicks  = idleTicks;
    return ret;
 }
-
 static unsigned long long FileTimeToInt64(const FILETIME & ft) {
 	return (((unsigned long long)(ft.dwHighDateTime))<<32)|((unsigned long long)ft.dwLowDateTime);
 }
-
 // Returns 1.0f for "CPU fully pinned", 0.0f for "CPU idle", or somewhere in between
 // You'll need to call this at regular intervals, since it measures the load between
 // the previous call and the current one.  Returns -1.0 on error.
@@ -63,6 +79,125 @@ float GetCPULoad()
    FILETIME idleTime, kernelTime, userTime;
    return GetSystemTimes(&idleTime, &kernelTime, &userTime) ? CalculateCPULoad(FileTimeToInt64(idleTime), FileTimeToInt64(kernelTime)+FileTimeToInt64(userTime)) : -1.0f;
 }
+
+
+// gpu
+// respect http://eliang.blogspot.nl/2011/05/getting-nvidia-gpu-usage-in-c.html
+// magic numbers, do not change them
+#define NVAPI_MAX_PHYSICAL_GPUS   64
+#define NVAPI_MAX_USAGES_PER_GPU  34
+// function pointer types
+typedef int *(*NvAPI_QueryInterface_t)(unsigned int offset);
+typedef int  (*NvAPI_Initialize_t)();
+typedef int  (*NvAPI_EnumPhysicalGPUs_t)(int **handles, int *count);
+typedef int  (*NvAPI_GPU_GetUsages_t)(int *handle, unsigned int *usages);
+
+//void MainClient::GetLoad()
+void GetLoad(MainClient* M)
+{
+	bool nvapi = false;
+	HMODULE hmod = LoadLibraryA("nvapi.dll");
+	if (hmod == NULL)
+	{
+		qDebug() << "Couldn't find nvapi.dll";
+		return;
+	}
+
+	// nvapi.dll internal function pointers
+	NvAPI_QueryInterface_t      NvAPI_QueryInterface     = NULL;
+	NvAPI_Initialize_t          NvAPI_Initialize         = NULL;
+	NvAPI_EnumPhysicalGPUs_t    NvAPI_EnumPhysicalGPUs   = NULL;
+	NvAPI_GPU_GetUsages_t       NvAPI_GPU_GetUsages      = NULL;
+
+	// nvapi_QueryInterface is a function used to retrieve other internal functions in nvapi.dll
+	NvAPI_QueryInterface = (NvAPI_QueryInterface_t) GetProcAddress(hmod, "nvapi_QueryInterface");
+
+	// some useful internal functions that aren't exported by nvapi.dll
+	NvAPI_Initialize = (NvAPI_Initialize_t) (*NvAPI_QueryInterface)(0x0150E828);
+	NvAPI_EnumPhysicalGPUs = (NvAPI_EnumPhysicalGPUs_t) (*NvAPI_QueryInterface)(0xE5AC921F);
+	NvAPI_GPU_GetUsages = (NvAPI_GPU_GetUsages_t) (*NvAPI_QueryInterface)(0x189A1FDF);
+
+	if (NvAPI_Initialize == NULL || NvAPI_EnumPhysicalGPUs == NULL ||
+	NvAPI_EnumPhysicalGPUs == NULL || NvAPI_GPU_GetUsages == NULL)
+	{
+		qDebug() << "Couldn't get functions in nvapi.dll";
+		hmod = NULL;
+		return;
+	}
+
+	// initialize NvAPI library, call it once before calling any other NvAPI functions
+	(*NvAPI_Initialize)();
+
+	int          gpuCount = 0;
+	int         *gpuHandles[NVAPI_MAX_PHYSICAL_GPUS] = { NULL };
+	unsigned int gpuUsages[NVAPI_MAX_USAGES_PER_GPU] = { 0 };
+
+	// gpuUsages[0] must be this value, otherwise NvAPI_GPU_GetUsages won't work
+	gpuUsages[0] = (NVAPI_MAX_USAGES_PER_GPU * 4) | 0x10000;
+
+	(*NvAPI_EnumPhysicalGPUs)(gpuHandles, &gpuCount);
+
+	while (true)
+	{
+		Sleep(2000);
+		if (M->mTcpSocket->ConnectedState == QAbstractSocket::ConnectedState)
+		{
+			// CPU
+			M->dynamicInformation.CPU = GetCPULoad() * 100.0;
+
+			// GPU
+			(*NvAPI_GPU_GetUsages)(gpuHandles[0], gpuUsages);
+			M->dynamicInformation.GPU = gpuUsages[3];
+
+			// RAM
+			MEMORYSTATUSEX statex;
+			statex.dwLength = sizeof (statex);
+			GlobalMemoryStatusEx(&statex);
+			M->dynamicInformation.RAM = statex.dwMemoryLoad;
+			M->SendDynamicInfo();
+
+
+			qDebug() << M->dynamicInformation.CPU;
+			qDebug() << M->dynamicInformation.GPU;
+			qDebug() << M->dynamicInformation.RAM;
+		}
+	}
+}
+void MainClient::SendStaticInfo()
+{
+	qDebug() << "SendS";
+	QByteArray  arrBlock;
+	QDataStream out(&arrBlock, QIODevice::WriteOnly);
+	out.setVersion(QDataStream::Qt_5_5);
+	out << quint8(0) << (QString)"Static" << staticInformation;
+
+	out.device()->seek(0);
+	out << quint8(arrBlock.size() - sizeof(quint8));
+	mTcpSocket->write(arrBlock);
+	mTcpSocket->flush();
+}
+void MainClient::SendDynamicInfo()
+{
+	qDebug() << "SendD";
+	QByteArray  arrBlock;
+	QDataStream out(&arrBlock, QIODevice::WriteOnly);
+	out.setVersion(QDataStream::Qt_5_5);
+	out << quint8(0) << (QString)"Dynamic" << dynamicInformation;
+
+	out.device()->seek(0);
+	out << quint8(arrBlock.size() - sizeof(quint8));
+	mTcpSocket->write(arrBlock);
+	mTcpSocket->flush();
+}
+
+
+
+
+
+
+
+
+
 
 MainClient::MainClient(QWidget *parent) :
     QMainWindow(parent),
@@ -132,7 +267,13 @@ MainClient::MainClient(QWidget *parent) :
           i++;
        }
        inputFile.close();
-    }
+	}
+	staticInformation.PCName = labels[0]->text();
+	staticInformation.OS	 = labels[1]->text();
+	staticInformation.Bit	 = labels[2]->text();
+	staticInformation.CPU	 = labels[3]->text();
+	staticInformation.GPU	 = labels[4]->text();
+	staticInformation.RAM	 = labels[5]->text();
 
     connect(ui->setdefPB, SIGNAL(clicked()), SLOT(slotSetDefault()));
     connect(ui->connectPB, SIGNAL(clicked()), SLOT(saveSettings()));
@@ -154,13 +295,16 @@ MainClient::MainClient(QWidget *parent) :
 
 	iNextBlocksize = 0;
     ui->ping->click();
-}
 
+	// instant send of pc load
+	std::thread tload(GetLoad, this);
+	tload.detach();
+}
 MainClient::~MainClient()
 {
+//	workerThread.terminate();
 	delete ui;
 }
-
 void MainClient::slotReadyRead()
 {
 	QDataStream in(mTcpSocket);
@@ -234,7 +378,7 @@ void MainClient::slotSendToServer()
       out << quint16(0) << QTime::currentTime() << Name << Message;
 
       out.device()->seek(0);
-      out << quint16(arrBlock.size() - sizeof(quint16));
+	  out << quint16(arrBlock.size() - sizeof(quint16));
 
       mTcpSocket->write(arrBlock);
 
@@ -244,12 +388,14 @@ void MainClient::slotSendToServer()
       }
       //emit(this->messaged());
 }
-
 void MainClient::slotConnected()
 {
-    ui->status->setText("Подключено");
-}
+	ui->status->setText("Подключено");
 
+	//connect(&workerThread, &QThread::started, this, GetLoad);
+	SendStaticInfo();
+	//workerThread.start();
+}
 void MainClient::slotDisconected()
 {
     ui->status->setText("Не подключено");
@@ -264,17 +410,14 @@ void MainClient::slotConnect(){
     loadSettings();
     mTcpSocket->connectToHost(address, port);
 }
-
 void MainClient::slotSender(){
     QObject* obj = sender();
     //ui->label_2->setText(obj->objectName());
     qDebug() << obj->objectName();
 }
-
 void MainClient::slotConfig(){
   ui->stackedWidget->setCurrentIndex(1);
 }
-
 void MainClient::closeEvent (QCloseEvent *event)
 {
     QMessageBox::StandardButton resBtn = QMessageBox::question( this, "Закрыть приложение",
@@ -288,7 +431,6 @@ void MainClient::closeEvent (QCloseEvent *event)
         event->accept();
     }
 }
-
 void MainClient::slotAboutToExit()
 {
     close();
@@ -305,13 +447,11 @@ void MainClient::loadSettings()
 {
     QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
     address = settings.value("current/address", "localhost").toString();
-    port = settings.value("current/port", 32094).toInt();
+	port = settings.value("current/port", 32094).toInt();
 }
-
 void MainClient::showinfo(){
     ui->stackedWidget->setCurrentIndex(2);
 }
-
 void MainClient::slotMainPage(){
     ui->stackedWidget->setCurrentIndex(0);
 }
@@ -331,7 +471,6 @@ void MainClient::slotLaunch(){
     process->waitForFinished(30000);
     qDebug()<<process->exitCode();
 }
-
 void MainClient::slotSetDefault()
 {
     QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
@@ -341,14 +480,12 @@ void MainClient::slotSetDefault()
     ui->portLine->setText(QString::number(this->port));
 
 }
-
 void MainClient::saveSettings(){
     QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
     settings.setValue("current/port", ui->portLine->text());
     settings.setValue("current/address", ui->addressLine->text());
     //this->accept();
 }
-
 void MainClient::slotHint(QString err){
     ui->label_2->setText(err);
 }

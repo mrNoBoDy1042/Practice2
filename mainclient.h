@@ -6,12 +6,53 @@
 #include <QMessageBox>
 #include <QTime>
 #include <QHostInfo>
+#include <QThread>
 #include "dialog2.h"
 
 namespace Ui {
 	class MainClient;
 }
+struct staticInfo
+{
+	QString PCName;
+	QString OS;
+	QString Bit;
+	QString CPU;
+	QString GPU;
+	QString RAM;
 
+
+	friend inline QDataStream& operator >>(QDataStream& t, staticInfo& p)
+	{
+		return t >> p.PCName >> p.OS >> p.Bit >> p.CPU >> p.GPU >> p.RAM;
+	}
+	friend inline QDataStream& operator <<(QDataStream& t, staticInfo& p)
+	{
+		return t << p.PCName
+				 << p.OS
+				 << p.Bit
+				 << p.CPU
+				 << p.GPU
+				 << p.RAM;
+	}
+};
+struct dynamicInfo
+{
+	double CPU;
+	double GPU;
+	double RAM;
+
+	friend inline QDataStream& operator >>(QDataStream& t, dynamicInfo& p)
+	{
+		return t >> p.CPU >> p.GPU >> p.RAM;
+	}
+	friend inline QDataStream& operator <<(QDataStream& t, dynamicInfo& p)
+	{
+		return t << p.CPU
+				 << p.GPU
+				 << p.RAM;
+	}
+};
 class MainClient : public QMainWindow
 {
 	Q_OBJECT
@@ -23,36 +64,28 @@ class MainClient : public QMainWindow
         QString address;
         QDialog *d;
         QDialog *sysinfo;
-        struct strct
-        {
-         QString PCname;
-         QString OS;
-         QString Capacity;
-         QString CPU;
-         QString GPU;
-         QString RAM;
-
-         friend QDataStream& operator >>(QDataStream& in, strct& st)
-         {
-          return in >> st.PCname >> st.OS >> st.Capacity >> st.CPU >> st.GPU >> st.RAM;
-         }
-
-         friend QDataStream& operator <<(QDataStream& in, strct& st)
-         {
-          return in << st.PCname << st.OS << st.Capacity << st.CPU << st.GPU << st.RAM;
-         }
-        };
 
     private:
-        Ui::MainClient *ui;
-        QTcpSocket* mTcpSocket;
+		Ui::MainClient *ui;
         quint16 iNextBlocksize;
         void loadSettings();
 //        void saveSettings();
 //        void defaultSettings();
-        QString m_sSettingsFile;
+		QString m_sSettingsFile;
+
+//		QThread workerThread;
+public:
+		QTcpSocket* mTcpSocket;
+		staticInfo staticInformation;
+		dynamicInfo dynamicInformation;
+
+		void SendStaticInfo();
+		void SendDynamicInfo();
 
     private slots:
+//		void GetLoad();
+
+
         void slotReadyRead();
         void slotError(QAbstractSocket::SocketError);
         void slotSendToServer();
