@@ -9,6 +9,12 @@
 #include <QThread>
 #include "dialog2.h"
 
+#include <windows.h>
+#include <w32api.h>
+#include <tlhelp32.h>
+#include <psapi.h>
+
+
 namespace Ui {
 	class MainClient;
 }
@@ -53,6 +59,7 @@ struct dynamicInfo
 				 << p.RAM;
 	}
 };
+
 class MainClient : public QMainWindow
 {
 	Q_OBJECT
@@ -73,6 +80,7 @@ class MainClient : public QMainWindow
 //        void defaultSettings();
 		QString m_sSettingsFile;
 
+        QString copyToQString(WCHAR array[MAX_PATH]);
 //		QThread workerThread;
 public:
 		QTcpSocket* mTcpSocket;
@@ -85,7 +93,7 @@ public:
     private slots:
 //		void GetLoad();
 
-
+        void on_pushButton_clicked();
         void slotReadyRead();
         void slotError(QAbstractSocket::SocketError);
         void slotSendToServer();
@@ -100,6 +108,7 @@ public:
         void slotSetDefault();
         void saveSettings();
         void slotMainPage();
+        void slotProcess();
         void slotHint(QString);
         void slotAboutToExit();
 

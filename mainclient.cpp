@@ -95,7 +95,7 @@ typedef int  (*NvAPI_GPU_GetUsages_t)(int *handle, unsigned int *usages);
 //void MainClient::GetLoad()
 void GetLoad(MainClient* M)
 {
-	bool nvapi = false;
+    //bool nvapi = false;
 	HMODULE hmod = LoadLibraryA("nvapi.dll");
 	if (hmod == NULL)
 	{
@@ -279,6 +279,7 @@ MainClient::MainClient(QWidget *parent) :
     connect(ui->connectPB, SIGNAL(clicked()), SLOT(saveSettings()));
     connect(ui->SystemInfoPB, SIGNAL(clicked()), SLOT(showinfo()));
     connect(ui->ping, SIGNAL(clicked()), SLOT(slotMainPage()));
+    connect(ui->launchPB, SIGNAL(clicked()), SLOT(slotProcess()));
     connect(mTcpSocket, SIGNAL(disconnected()), SLOT(slotDisconected()));
 	connect(mTcpSocket, SIGNAL(connected()), SLOT(slotConnected()));
 	connect(mTcpSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
@@ -291,7 +292,9 @@ MainClient::MainClient(QWidget *parent) :
     connect(ui->configPB, SIGNAL(clicked()), SLOT(slotConfig()));
     connect(ui->reconnectPB, SIGNAL(clicked()), SLOT(slotConnect()));
     connect(this, SIGNAL(reconnect()), SLOT(slotConnect()));
-    connect(ui->launchPB, SIGNAL(clicked()), SLOT(slotLaunch()));
+    connect(ui->pushButton_2, SIGNAL(clicked()), SLOT(slotLaunch()));
+
+    connect(ui->pushButton, SIGNAL(clicked()), SLOT(on_pushButton_clicked()));
 
 	iNextBlocksize = 0;
     ui->ping->click();
@@ -299,12 +302,80 @@ MainClient::MainClient(QWidget *parent) :
 	// instant send of pc load
 	std::thread tload(GetLoad, this);
 	tload.detach();
+
+
+
+    ui->tableWidget_2->setColumnCount(3);
+    ui->tableWidget_2->setShowGrid(true);
+    ui->tableWidget_2->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableWidget_2->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableWidget_2->horizontalHeader()->setStretchLastSection(true);
+    ui->tableWidget_2->setHorizontalHeaderLabels(QStringList()
+                                               << ("ID")
+                                               << ("Процесс")
+                                               << ("Память")
+                                               );
 }
 MainClient::~MainClient()
 {
 //	workerThread.terminate();
 	delete ui;
 }
+
+void MainClient::on_pushButton_clicked()
+{
+    qDebug() << "process";
+    ui->tableWidget->clearContents();
+    ui->tableWidget->model()->removeRows(0, ui->tableWidget->rowCount());
+    QString procName;
+    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+
+    if (hSnap  == NULL)
+    {
+        QMessageBox::critical(0, "ОШИБКА", "Error Load ToolHelp", QMessageBox::Close);
+        return;
+    }
+    PROCESSENTRY32 pc32 = { sizeof(pc32) };
+    quint64 i = 0;
+
+    if (Process32First(hSnap , &pc32))
+    {
+        while (Process32Next(hSnap , &pc32))
+        {
+            HANDLE curHandle = OpenProcess(PROCESS_ALL_ACCESS, false, pc32.th32ProcessID);
+            PROCESS_MEMORY_COUNTERS_EX pmc;
+            GetProcessMemoryInfo(curHandle,
+                reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&pmc), sizeof(pmc));
+
+            ui->tableWidget->insertRow(i);
+            qint64 ID = pc32.th32ProcessID ;
+            procName = copyToQString(pc32.szExeFile);
+
+            ui->tableWidget_2->setItem(i,0, new QTableWidgetItem(QString::number(ID)));
+            ui->tableWidget_2->setItem(i,1, new QTableWidgetItem(procName));
+            ui->tableWidget_2->setItem(i,2, new QTableWidgetItem(QString::number(pmc.WorkingSetSize / 1024)));
+
+            ++i;
+            CloseHandle(curHandle);
+        }
+    }
+    CloseHandle(hSnap);
+    ui->tableWidget->resizeColumnsToContents();
+}
+
+QString MainClient::copyToQString(WCHAR array[])
+{
+    QString string;
+    int i = 0;
+
+    while (array[i] != 0)
+    {
+        string[i] = array[i];
+        i++;
+    }
+    return string;
+}
+
 void MainClient::slotReadyRead()
 {
 	QDataStream in(mTcpSocket);
@@ -455,6 +526,9 @@ void MainClient::showinfo(){
 void MainClient::slotMainPage(){
     ui->stackedWidget->setCurrentIndex(0);
 }
+void MainClient::slotProcess(){
+    ui->stackedWidget->setCurrentIndex(4);
+}
 
 /******************************************************
  *  slotLaunch - процедура для запуска и обработки
@@ -467,6 +541,7 @@ void MainClient::slotMainPage(){
 void MainClient::slotLaunch(){
     QProcess *process = new QProcess(this);
     QString file = QApplication::applicationDirPath() + "/../TestUnit.exe";
+    //qDebug()<<file;
     process->start(file);
     process->waitForFinished(30000);
     qDebug()<<process->exitCode();

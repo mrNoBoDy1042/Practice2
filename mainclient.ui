@@ -303,7 +303,7 @@ padding:0px;
 margin:0px;</string>
            </property>
            <property name="text">
-            <string>Запустить процесс</string>
+            <string>Процессы</string>
            </property>
            <property name="flat">
             <bool>false</bool>
@@ -424,7 +424,7 @@ margin:0px;</string>
           <string notr="true"/>
          </property>
          <property name="currentIndex">
-          <number>2</number>
+          <number>4</number>
          </property>
          <widget class="QWidget" name="page_2">
           <widget class="QListWidget" name="listWidget">
@@ -977,6 +977,44 @@ margin:0px;</string>
              <width>321</width>
              <height>471</height>
             </rect>
+           </property>
+          </widget>
+         </widget>
+         <widget class="QWidget" name="page">
+          <widget class="QPushButton" name="pushButton">
+           <property name="geometry">
+            <rect>
+             <x>50</x>
+             <y>357</y>
+             <width>541</width>
+             <height>41</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Запустить диспетчер задач</string>
+           </property>
+          </widget>
+          <widget class="QTableWidget" name="tableWidget_2">
+           <property name="geometry">
+            <rect>
+             <x>50</x>
+             <y>10</y>
+             <width>541</width>
+             <height>341</height>
+            </rect>
+           </property>
+          </widget>
+          <widget class="QPushButton" name="pushButton_2">
+           <property name="geometry">
+            <rect>
+             <x>50</x>
+             <y>410</y>
+             <width>541</width>
+             <height>41</height>
+            </rect>
+           </property>
+           <property name="text">
+            <string>Запустить процесс</string>
            </property>
           </widget>
          </widget>

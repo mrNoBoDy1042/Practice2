@@ -11,8 +11,12 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = Client
 TEMPLATE = app
 CONFIG += c++11
-LIBS     += -lws2_32
-LIBS     += -liphlpapi
+#LIBS     += -lws2_32
+#LIBS     += -liphlpapi
+
+LIBS     += libgdi32
+LIBS     += -L/path/to -lpsapi
+
 # The following define makes your compiler emit warnings if you use
 # any feature of Qt which has been marked as deprecated (the exact warnings
 # depend on your compiler). Please consult the documentation of the
@@ -28,12 +32,11 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
         main.cpp \
         mainclient.cpp \
-    login.cpp
+        login.cpp
 
 HEADERS += \
         mainclient.h \
-    login.h \
-    login.h
+        login.h
 
 FORMS += \
     mainclient.ui \
