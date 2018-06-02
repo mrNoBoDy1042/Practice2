@@ -33,7 +33,6 @@
 #include <QFIle>
 #include <QSettings>
 #include <QCloseEvent>
-#define DIV 1024
 
 
 
@@ -156,7 +155,8 @@ void GetLoad(MainClient* M)
 			M->dynamicInformation.RAM = statex.dwMemoryLoad;
 			M->SendDynamicInfo();
 
-
+            //M->UpdateLabel(QString::number((int)M->dynamicInformation.CPU), QString::number((int)M->dynamicInformation.GPU));
+            emit M->change(QString::number((int)M->dynamicInformation.CPU), QString::number((int)M->dynamicInformation.GPU));
 			qDebug() << M->dynamicInformation.CPU;
 			qDebug() << M->dynamicInformation.GPU;
 			qDebug() << M->dynamicInformation.RAM;
@@ -165,38 +165,85 @@ void GetLoad(MainClient* M)
 }
 void MainClient::SendStaticInfo()
 {
-	qDebug() << "SendS";
-	QByteArray  arrBlock;
-	QDataStream out(&arrBlock, QIODevice::WriteOnly);
-	out.setVersion(QDataStream::Qt_5_5);
-	out << quint8(0) << (QString)"Static" << staticInformation;
+    qDebug() << "SendS";
+    QByteArray  arrBlock;
+    QDataStream out(&arrBlock, QIODevice::WriteOnly);
+    out.setVersion(QDataStream::Qt_5_5);
+    out << quint8(0) << (QString)"Static" << staticInformation;
 
-	out.device()->seek(0);
-	out << quint8(arrBlock.size() - sizeof(quint8));
-	mTcpSocket->write(arrBlock);
-	mTcpSocket->flush();
+    out.device()->seek(0);
+    out << quint8(arrBlock.size() - sizeof(quint8));
+    mTcpSocket->write(arrBlock);
+    mTcpSocket->flush();
 }
+
 void MainClient::SendDynamicInfo()
 {
-	qDebug() << "SendD";
-	QByteArray  arrBlock;
-	QDataStream out(&arrBlock, QIODevice::WriteOnly);
-	out.setVersion(QDataStream::Qt_5_5);
-	out << quint8(0) << (QString)"Dynamic" << dynamicInformation;
+//	qDebug() << "SendD";
+//	QByteArray  arrBlock;
+//	QDataStream out(&arrBlock, QIODevice::WriteOnly);
+//	out.setVersion(QDataStream::Qt_5_5);
+//	out << quint8(0) << (QString)"Dynamic" << dynamicInformation;
 
-	out.device()->seek(0);
-	out << quint8(arrBlock.size() - sizeof(quint8));
-	mTcpSocket->write(arrBlock);
-	mTcpSocket->flush();
+//	out.device()->seek(0);
+//	out << quint8(arrBlock.size() - sizeof(quint8));
+//	mTcpSocket->write(arrBlock);
+//	mTcpSocket->flush();
 }
 
+void LaunchGetTasks(MainClient*)
+{
+    //emit(MainClient::launch());
+}
 
+void MainClient::getTasks()
+{
+    qDebug() << "process";
 
+    ui->tableWidget->clearContents();
+    ui->tableWidget->model()->removeRows(0, ui->tableWidget->rowCount());
+    ui->tableWidget->setRowCount(0);
+    QString procName;
+    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
 
+    if (hSnap  == NULL)
+    {
+        QMessageBox::critical(0, "ОШИБКА", "Error Load ToolHelp", QMessageBox::Close);
+        return;
+    }
 
+    PROCESSENTRY32 pc32 = { sizeof(pc32) };
+    quint64 i = 0;
+    QSet<QString> proc;
 
+    if (Process32First(hSnap , &pc32))
+    {
+        while (Process32Next(hSnap , &pc32))
+        {
+            HANDLE curHandle = OpenProcess(PROCESS_ALL_ACCESS, false, pc32.th32ProcessID);
+            PROCESS_MEMORY_COUNTERS_EX pmc;
+            GetProcessMemoryInfo(curHandle,
+                reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&pmc), sizeof(pmc));
 
+            qint64 ID = pc32.th32ProcessID ;
+            procName = copyToQString(pc32.szExeFile);
+            if (!proc.contains(procName))
+            {
+                ui->tableWidget->insertRow(i);
+                proc.insert(procName);
+                ui->tableWidget->setItem(i,0, new QTableWidgetItem(QString::number(ID)));
+                ui->tableWidget->setItem(i,1, new QTableWidgetItem(procName));
+                ui->tableWidget->setItem(i,2, new QTableWidgetItem(QString::number(pmc.WorkingSetSize / 1024)));
 
+                ++i;
+
+                CloseHandle(curHandle);
+            }
+        }
+    }
+    CloseHandle(hSnap);
+    ui->tableWidget->resizeColumnsToContents();
+}
 
 
 MainClient::MainClient(QWidget *parent) :
@@ -219,47 +266,36 @@ MainClient::MainClient(QWidget *parent) :
     this->address = address;
     this->port = port;
 
+
+
     ui->setupUi(this);
     ui->addressLine->setText(this->address);
-    ui -> portLine -> setText(QString::number(this -> port));
+    ui->portLine -> setText(QString::number(this -> port));
     ui->portLine->setValidator( new QIntValidator(0, 65535, this) );
 
-    ui->ping->setCheckable(true);
-    ui->ping->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
-                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
-                            "QPushButton:checked { background-color: #F7D900; color:#242424};");
-    ui->SystemInfoPB->setCheckable(true);
-    ui->SystemInfoPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
-                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
-                            "QPushButton:checked { background-color: #F7D900; color:#242424};");
-    ui->configPB->setCheckable(true);
-    ui->configPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
-                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
-                            "QPushButton:checked { background-color: #F7D900; color:#242424};");
+    QPushButton *rb[] = {ui->ping, ui->configPB, ui->exitPB, ui->launchPB, ui->reconnectPB};
+    int i = 0;
+    while (i <= 4) {
 
-    ui->exitPB->setCheckable(true);
-    ui->exitPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
-                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
-                            "QPushButton:pressed { background-color: #F7D900; color:#242424};");
-    ui->launchPB->setCheckable(true);
-    ui->launchPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
-                            "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
-                            "QPushButton:pressed { background-color: #F7D900; color:#242424};");
+        rb[i]->setCheckable(true);
+        rb[i]->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                                   "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
+                                   "QPushButton:checked { background-color: #F7D900; color:#242424};");
+        i++;
+    }
 
-    ui->reconnectPB->setCheckable(true);
-    ui->reconnectPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
-                            "border-top-width: 1px; padding:0px; margin:0px; color:#FFF}"
-                            "QPushButton:pressed { background-color: #F7D900; color:#242424};");
 
-    QLabel* labels[6] = {ui->PCName, ui->OSName, ui->label_10, ui->cpuName, ui->gpuName, ui->OperMemory};
+    QLabel* labels[6] = {ui->PCName_2, ui->OSName_2, ui->label_19, ui->cpuName_2, ui->gpuName_2, ui->label_2};
 
     QString file = QApplication::applicationDirPath() + "/../config.txt";
     QFile inputFile(file);
+
     if (inputFile.open(QIODevice::ReadOnly))
     {
        QTextStream in(&inputFile);
        in.setCodec("UTF-8");
        qint8 i = 0;
+
        while (!in.atEnd())
        {
           QString line = in.readLine();
@@ -268,16 +304,18 @@ MainClient::MainClient(QWidget *parent) :
        }
        inputFile.close();
 	}
+
 	staticInformation.PCName = labels[0]->text();
 	staticInformation.OS	 = labels[1]->text();
 	staticInformation.Bit	 = labels[2]->text();
 	staticInformation.CPU	 = labels[3]->text();
 	staticInformation.GPU	 = labels[4]->text();
 	staticInformation.RAM	 = labels[5]->text();
+    ui->label_2->setText("");
 
     connect(ui->setdefPB, SIGNAL(clicked()), SLOT(slotSetDefault()));
     connect(ui->connectPB, SIGNAL(clicked()), SLOT(saveSettings()));
-    connect(ui->SystemInfoPB, SIGNAL(clicked()), SLOT(showinfo()));
+
     connect(ui->ping, SIGNAL(clicked()), SLOT(slotMainPage()));
     connect(ui->launchPB, SIGNAL(clicked()), SLOT(slotProcess()));
     connect(mTcpSocket, SIGNAL(disconnected()), SLOT(slotDisconected()));
@@ -293,8 +331,11 @@ MainClient::MainClient(QWidget *parent) :
     connect(ui->reconnectPB, SIGNAL(clicked()), SLOT(slotConnect()));
     connect(this, SIGNAL(reconnect()), SLOT(slotConnect()));
     connect(ui->pushButton_2, SIGNAL(clicked()), SLOT(slotLaunch()));
+    connect(this,SIGNAL(change(QString,QString)),this,SLOT(UpdateLabel(QString,QString)),Qt::BlockingQueuedConnection);
+    //connect(this, SIGNAL(launch()), SLOT(getTasks()));
+    //connect(ui->pushButton, SIGNAL(clicked()), SLOT(on_pushButton_clicked()));
 
-    connect(ui->pushButton, SIGNAL(clicked()), SLOT(on_pushButton_clicked()));
+    getTasks();
 
 	iNextBlocksize = 0;
     ui->ping->click();
@@ -304,63 +345,23 @@ MainClient::MainClient(QWidget *parent) :
 	tload.detach();
 
 
-
-    ui->tableWidget_2->setColumnCount(3);
-    ui->tableWidget_2->setShowGrid(true);
-    ui->tableWidget_2->setSelectionMode(QAbstractItemView::SingleSelection);
-    ui->tableWidget_2->setSelectionBehavior(QAbstractItemView::SelectRows);
-    ui->tableWidget_2->horizontalHeader()->setStretchLastSection(true);
-    ui->tableWidget_2->setHorizontalHeaderLabels(QStringList()
+    ui->tableWidget->setColumnCount(3);
+    ui->tableWidget->setShowGrid(true);
+    ui->tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
+    ui->tableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    ui->tableWidget->horizontalHeader()->setStretchLastSection(true);
+    ui->tableWidget->setHorizontalHeaderLabels(QStringList()
                                                << ("ID")
                                                << ("Процесс")
                                                << ("Память")
                                                );
+    ui->tableWidget->setStyleSheet(" QHeaderView::section{ background-color: #242424; color:#FFF}");
+
 }
 MainClient::~MainClient()
 {
 //	workerThread.terminate();
 	delete ui;
-}
-
-void MainClient::on_pushButton_clicked()
-{
-    qDebug() << "process";
-    ui->tableWidget->clearContents();
-    ui->tableWidget->model()->removeRows(0, ui->tableWidget->rowCount());
-    QString procName;
-    HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-
-    if (hSnap  == NULL)
-    {
-        QMessageBox::critical(0, "ОШИБКА", "Error Load ToolHelp", QMessageBox::Close);
-        return;
-    }
-    PROCESSENTRY32 pc32 = { sizeof(pc32) };
-    quint64 i = 0;
-
-    if (Process32First(hSnap , &pc32))
-    {
-        while (Process32Next(hSnap , &pc32))
-        {
-            HANDLE curHandle = OpenProcess(PROCESS_ALL_ACCESS, false, pc32.th32ProcessID);
-            PROCESS_MEMORY_COUNTERS_EX pmc;
-            GetProcessMemoryInfo(curHandle,
-                reinterpret_cast<PPROCESS_MEMORY_COUNTERS>(&pmc), sizeof(pmc));
-
-            ui->tableWidget->insertRow(i);
-            qint64 ID = pc32.th32ProcessID ;
-            procName = copyToQString(pc32.szExeFile);
-
-            ui->tableWidget_2->setItem(i,0, new QTableWidgetItem(QString::number(ID)));
-            ui->tableWidget_2->setItem(i,1, new QTableWidgetItem(procName));
-            ui->tableWidget_2->setItem(i,2, new QTableWidgetItem(QString::number(pmc.WorkingSetSize / 1024)));
-
-            ++i;
-            CloseHandle(curHandle);
-        }
-    }
-    CloseHandle(hSnap);
-    ui->tableWidget->resizeColumnsToContents();
 }
 
 QString MainClient::copyToQString(WCHAR array[])
@@ -374,6 +375,19 @@ QString MainClient::copyToQString(WCHAR array[])
         i++;
     }
     return string;
+}
+
+void MainClient::slotButtonHandler()
+{
+//    foreach (QPushButton *b, button) {
+//        b->setChecked(false);
+//    }
+}
+
+void MainClient::UpdateLabel(QString CPU, QString GPU)
+{
+    ui->cpuUsage->setText(CPU+"%");
+    ui->gpuUsage->setText(GPU+"%");
 }
 
 void MainClient::slotReadyRead()
@@ -520,9 +534,8 @@ void MainClient::loadSettings()
     address = settings.value("current/address", "localhost").toString();
 	port = settings.value("current/port", 32094).toInt();
 }
-void MainClient::showinfo(){
-    ui->stackedWidget->setCurrentIndex(2);
-}
+
+
 void MainClient::slotMainPage(){
     ui->stackedWidget->setCurrentIndex(0);
 }
@@ -539,10 +552,12 @@ void MainClient::slotProcess(){
  *       file - путь к исполняемому файлу.
  ******************************************************/
 void MainClient::slotLaunch(){
+
     QProcess *process = new QProcess(this);
     QString file = QApplication::applicationDirPath() + "/../TestUnit.exe";
     //qDebug()<<file;
     process->start(file);
+    getTasks();
     process->waitForFinished(30000);
     qDebug()<<process->exitCode();
 }
@@ -562,5 +577,5 @@ void MainClient::saveSettings(){
     //this->accept();
 }
 void MainClient::slotHint(QString err){
-    ui->label_2->setText(err);
+    //ui->label_2->setText(err);
 }

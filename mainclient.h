@@ -59,7 +59,6 @@ struct dynamicInfo
 				 << p.RAM;
 	}
 };
-
 class MainClient : public QMainWindow
 {
 	Q_OBJECT
@@ -82,18 +81,21 @@ class MainClient : public QMainWindow
 
         QString copyToQString(WCHAR array[MAX_PATH]);
 //		QThread workerThread;
-public:
+    public:
 		QTcpSocket* mTcpSocket;
 		staticInfo staticInformation;
 		dynamicInfo dynamicInformation;
+        QPushButton *button[];
 
 		void SendStaticInfo();
 		void SendDynamicInfo();
 
-    private slots:
-//		void GetLoad();
 
-        void on_pushButton_clicked();
+
+    private slots:
+        void UpdateLabel(QString CPU, QString GPU);
+//		void GetLoad();
+        void getTasks();
         void slotReadyRead();
         void slotError(QAbstractSocket::SocketError);
         void slotSendToServer();
@@ -103,7 +105,6 @@ public:
         void slotSender();
         void slotConfig();
         void slotLaunch();
-        void showinfo();
         void closeEvent (QCloseEvent *event);
         void slotSetDefault();
         void saveSettings();
@@ -111,11 +112,14 @@ public:
         void slotProcess();
         void slotHint(QString);
         void slotAboutToExit();
+        void slotButtonHandler();
 
     signals:
         void closing();
         void error(QString);
         void reconnect();
+        void launch();
+        void change(QString, QString);
 };
 
 #endif // MAINCLIENT_H
