@@ -14,50 +14,49 @@
 #include <tlhelp32.h>
 #include <psapi.h>
 
-
 namespace Ui {
 	class MainClient;
 }
 struct staticInfo
 {
-	QString PCName;
-	QString OS;
-	QString Bit;
-	QString CPU;
-	QString GPU;
-	QString RAM;
+    QString PCName;
+    QString OS;
+    QString Bit;
+    QString CPU;
+    QString GPU;
+    QString RAM;
 
 
-	friend inline QDataStream& operator >>(QDataStream& t, staticInfo& p)
-	{
-		return t >> p.PCName >> p.OS >> p.Bit >> p.CPU >> p.GPU >> p.RAM;
-	}
-	friend inline QDataStream& operator <<(QDataStream& t, staticInfo& p)
-	{
-		return t << p.PCName
-				 << p.OS
-				 << p.Bit
-				 << p.CPU
-				 << p.GPU
-				 << p.RAM;
-	}
+    friend inline QDataStream& operator >>(QDataStream& t, staticInfo& p)
+    {
+        return t >> p.PCName >> p.OS >> p.Bit >> p.CPU >> p.GPU >> p.RAM;
+    }
+    friend inline QDataStream& operator <<(QDataStream& t, staticInfo& p)
+    {
+        return t << p.PCName
+                 << p.OS
+                 << p.Bit
+                 << p.CPU
+                 << p.GPU
+                 << p.RAM;
+    }
 };
 struct dynamicInfo
 {
-	double CPU;
-	double GPU;
-	double RAM;
+    double CPU;
+    double GPU;
+    double RAM;
 
-	friend inline QDataStream& operator >>(QDataStream& t, dynamicInfo& p)
-	{
-		return t >> p.CPU >> p.GPU >> p.RAM;
-	}
-	friend inline QDataStream& operator <<(QDataStream& t, dynamicInfo& p)
-	{
-		return t << p.CPU
-				 << p.GPU
-				 << p.RAM;
-	}
+    friend inline QDataStream& operator >>(QDataStream& t, dynamicInfo& p)
+    {
+        return t >> p.CPU >> p.GPU >> p.RAM;
+    }
+    friend inline QDataStream& operator <<(QDataStream& t, dynamicInfo& p)
+    {
+        return t << p.CPU
+                 << p.GPU
+                 << p.RAM;
+    }
 };
 class MainClient : public QMainWindow
 {
@@ -73,7 +72,7 @@ class MainClient : public QMainWindow
 
     private:
 		Ui::MainClient *ui;
-        quint16 iNextBlocksize;
+        quint8 iNextBlocksize;
         void loadSettings();
 //        void saveSettings();
 //        void defaultSettings();
@@ -87,10 +86,14 @@ class MainClient : public QMainWindow
 		dynamicInfo dynamicInformation;
         QPushButton *button[];
 
-		void SendStaticInfo();
-		void SendDynamicInfo();
+        //---------------------------------------------------------------------------------------------------------
+        // MV's changes
+        bool stopped;
+        int exitcode;
 
-
+        void GetLoadCycle();
+        void SendInfo(char b);
+        //---------------------------------------------------------------------------------------------------------
 
     private slots:
         void UpdateLabel(QString CPU, QString GPU);

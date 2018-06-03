@@ -43,6 +43,10 @@
 
 
 
+//---------------------------------------------------------------------------------------------------------
+// MV's changes
+
+#include <QTime>
 
 // cpu
 #include <thread>
@@ -90,86 +94,121 @@ typedef int *(*NvAPI_QueryInterface_t)(unsigned int offset);
 typedef int  (*NvAPI_Initialize_t)();
 typedef int  (*NvAPI_EnumPhysicalGPUs_t)(int **handles, int *count);
 typedef int  (*NvAPI_GPU_GetUsages_t)(int *handle, unsigned int *usages);
-
-//void MainClient::GetLoad()
 void GetLoad(MainClient* M)
-{
-    //bool nvapi = false;
-	HMODULE hmod = LoadLibraryA("nvapi.dll");
-	if (hmod == NULL)
-	{
-		qDebug() << "Couldn't find nvapi.dll";
-		return;
-	}
+{    //bool nvapi = false;
+    HMODULE hmod = LoadLibraryA("nvapi.dll");
+    if (hmod == NULL)
+    {
+        qDebug() << "Couldn't find nvapi.dll";
+        return;
+    }
 
-	// nvapi.dll internal function pointers
-	NvAPI_QueryInterface_t      NvAPI_QueryInterface     = NULL;
-	NvAPI_Initialize_t          NvAPI_Initialize         = NULL;
-	NvAPI_EnumPhysicalGPUs_t    NvAPI_EnumPhysicalGPUs   = NULL;
-	NvAPI_GPU_GetUsages_t       NvAPI_GPU_GetUsages      = NULL;
+    // nvapi.dll internal function pointers
+    NvAPI_QueryInterface_t      NvAPI_QueryInterface     = NULL;
+    NvAPI_Initialize_t          NvAPI_Initialize         = NULL;
+    NvAPI_EnumPhysicalGPUs_t    NvAPI_EnumPhysicalGPUs   = NULL;
+    NvAPI_GPU_GetUsages_t       NvAPI_GPU_GetUsages      = NULL;
 
-	// nvapi_QueryInterface is a function used to retrieve other internal functions in nvapi.dll
-	NvAPI_QueryInterface = (NvAPI_QueryInterface_t) GetProcAddress(hmod, "nvapi_QueryInterface");
+    // nvapi_QueryInterface is a function used to retrieve other internal functions in nvapi.dll
+    NvAPI_QueryInterface = (NvAPI_QueryInterface_t) GetProcAddress(hmod, "nvapi_QueryInterface");
 
-	// some useful internal functions that aren't exported by nvapi.dll
-	NvAPI_Initialize = (NvAPI_Initialize_t) (*NvAPI_QueryInterface)(0x0150E828);
-	NvAPI_EnumPhysicalGPUs = (NvAPI_EnumPhysicalGPUs_t) (*NvAPI_QueryInterface)(0xE5AC921F);
-	NvAPI_GPU_GetUsages = (NvAPI_GPU_GetUsages_t) (*NvAPI_QueryInterface)(0x189A1FDF);
+    // some useful internal functions that aren't exported by nvapi.dll
+    NvAPI_Initialize = (NvAPI_Initialize_t) (*NvAPI_QueryInterface)(0x0150E828);
+    NvAPI_EnumPhysicalGPUs = (NvAPI_EnumPhysicalGPUs_t) (*NvAPI_QueryInterface)(0xE5AC921F);
+    NvAPI_GPU_GetUsages = (NvAPI_GPU_GetUsages_t) (*NvAPI_QueryInterface)(0x189A1FDF);
 
-	if (NvAPI_Initialize == NULL || NvAPI_EnumPhysicalGPUs == NULL ||
-	NvAPI_EnumPhysicalGPUs == NULL || NvAPI_GPU_GetUsages == NULL)
-	{
-		qDebug() << "Couldn't get functions in nvapi.dll";
-		hmod = NULL;
-		return;
-	}
+    if (NvAPI_Initialize == NULL || NvAPI_EnumPhysicalGPUs == NULL ||
+    NvAPI_EnumPhysicalGPUs == NULL || NvAPI_GPU_GetUsages == NULL)
+    {
+        qDebug() << "Couldn't get functions in nvapi.dll";
+        hmod = NULL;
+        return;
+    }
 
-	// initialize NvAPI library, call it once before calling any other NvAPI functions
-	(*NvAPI_Initialize)();
+    // initialize NvAPI library, call it once before calling any other NvAPI functions
+    (*NvAPI_Initialize)();
 
-	int          gpuCount = 0;
-	int         *gpuHandles[NVAPI_MAX_PHYSICAL_GPUS] = { NULL };
-	unsigned int gpuUsages[NVAPI_MAX_USAGES_PER_GPU] = { 0 };
+    int          gpuCount = 0;
+    int         *gpuHandles[NVAPI_MAX_PHYSICAL_GPUS] = { NULL };
+    unsigned int gpuUsages[NVAPI_MAX_USAGES_PER_GPU] = { 0 };
 
-	// gpuUsages[0] must be this value, otherwise NvAPI_GPU_GetUsages won't work
-	gpuUsages[0] = (NVAPI_MAX_USAGES_PER_GPU * 4) | 0x10000;
+    // gpuUsages[0] must be this value, otherwise NvAPI_GPU_GetUsages won't work
+    gpuUsages[0] = (NVAPI_MAX_USAGES_PER_GPU * 4) | 0x10000;
 
-	(*NvAPI_EnumPhysicalGPUs)(gpuHandles, &gpuCount);
+    (*NvAPI_EnumPhysicalGPUs)(gpuHandles, &gpuCount);
 
-	while (true)
-	{
-		Sleep(2000);
-		if (M->mTcpSocket->ConnectedState == QAbstractSocket::ConnectedState)
-		{
-			// CPU
-			M->dynamicInformation.CPU = GetCPULoad() * 100.0;
+    quint64 count = 0;
+    while (!M->stopped)
+    {
+        if (M->mTcpSocket->ConnectedState == QAbstractSocket::ConnectedState)
+        {
+            // CPU
+            M->dynamicInformation.CPU = roundf(GetCPULoad() * 100.0);
 
-			// GPU
-			(*NvAPI_GPU_GetUsages)(gpuHandles[0], gpuUsages);
-			M->dynamicInformation.GPU = gpuUsages[3];
+            // GPU
+            (*NvAPI_GPU_GetUsages)(gpuHandles[0], gpuUsages);
+            M->dynamicInformation.GPU = gpuUsages[3];
 
-			// RAM
-			MEMORYSTATUSEX statex;
-			statex.dwLength = sizeof (statex);
-			GlobalMemoryStatusEx(&statex);
-			M->dynamicInformation.RAM = statex.dwMemoryLoad;
-			M->SendDynamicInfo();
+            // RAM
+            MEMORYSTATUSEX statex;
+            statex.dwLength = sizeof (statex);
+            GlobalMemoryStatusEx(&statex);
+            M->dynamicInformation.RAM = statex.dwMemoryLoad;
+            M->SendInfo(0);
 
             //M->UpdateLabel(QString::number((int)M->dynamicInformation.CPU), QString::number((int)M->dynamicInformation.GPU));
             emit M->change(QString::number((int)M->dynamicInformation.CPU), QString::number((int)M->dynamicInformation.GPU));
-			qDebug() << M->dynamicInformation.CPU;
-			qDebug() << M->dynamicInformation.GPU;
-			qDebug() << M->dynamicInformation.RAM;
-		}
-	}
+
+            qDebug() << M->dynamicInformation.CPU;
+            qDebug() << M->dynamicInformation.GPU;
+            qDebug() << M->dynamicInformation.RAM;
+        }
+        ++count;
+        Sleep(1000);
+    }
 }
-void MainClient::SendStaticInfo()
+
+void MainClient::GetLoadCycle()
 {
-    qDebug() << "SendS";
+//        QEventLoop loop;
+//        QTimer timer;
+//        timer.setInterval(1000); // 2 sec
+//        connect (&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
+//        timer.start();
+//        loop.exec();
+
+
+//QTimer timer;
+//timer.start(1000);
+//qApp->exec();
+
+
+
+//        QTime timer;
+//        timer.start();
+//        for (;timer.elapsed() < 1000;)
+//            qApp->processEvents(0);
+}
+
+// send
+void MainClient::SendInfo(char b)
+{
     QByteArray  arrBlock;
     QDataStream out(&arrBlock, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_5_5);
-    out << quint8(0) << (QString)"Static" << staticInformation;
+
+    if (b == 0) // dynamin info
+    {
+        out << quint8(0) << (QString)"Dynamic" << dynamicInformation;
+    }
+    else if (b == 1) // static info
+    {
+        out << quint8(0) << (QString)"Static" << staticInformation;
+    }
+    else //(b == 2) // exitcode
+    {
+        out << quint8(0) << (QString)"GetRand" << exitcode;
+    }
 
     out.device()->seek(0);
     out << quint8(arrBlock.size() - sizeof(quint8));
@@ -177,19 +216,65 @@ void MainClient::SendStaticInfo()
     mTcpSocket->flush();
 }
 
-void MainClient::SendDynamicInfo()
-{
-//	qDebug() << "SendD";
-//	QByteArray  arrBlock;
-//	QDataStream out(&arrBlock, QIODevice::WriteOnly);
-//	out.setVersion(QDataStream::Qt_5_5);
-//	out << quint8(0) << (QString)"Dynamic" << dynamicInformation;
 
-//	out.device()->seek(0);
-//	out << quint8(arrBlock.size() - sizeof(quint8));
-//	mTcpSocket->write(arrBlock);
-//	mTcpSocket->flush();
+// get
+void MainClient::slotReadyRead()
+{
+    QDataStream in(mTcpSocket);
+    in.setVersion(QDataStream::Qt_5_5);
+
+    iNextBlocksize = 0;
+    while(true)
+    {
+        if (!iNextBlocksize){
+            if (mTcpSocket->bytesAvailable() < sizeof(quint8))
+                break;
+
+            in >> iNextBlocksize;
+        }
+
+        if (mTcpSocket->bytesAvailable() < iNextBlocksize)
+            break;
+
+        QString Msg;
+        in >> Msg;
+
+        if (Msg == "GetRand")
+        {
+            // run exitcode
+            slotLaunch();
+            SendInfo(2);
+            break;
+        }
+
+        iNextBlocksize = 0;
+    }
 }
+
+void MainClient::slotConnected()
+{
+    ui->status->setText("Подключено");
+
+    //connect(&workerThread, &QThread::started, this, GetLoad);
+    SendInfo(1);
+    //workerThread.start();
+}
+
+//---------------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 void LaunchGetTasks(MainClient*)
 {
@@ -340,11 +425,6 @@ MainClient::MainClient(QWidget *parent) :
 	iNextBlocksize = 0;
     ui->ping->click();
 
-	// instant send of pc load
-	std::thread tload(GetLoad, this);
-	tload.detach();
-
-
     ui->tableWidget->setColumnCount(3);
     ui->tableWidget->setShowGrid(true);
     ui->tableWidget->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -357,10 +437,16 @@ MainClient::MainClient(QWidget *parent) :
                                                );
     ui->tableWidget->setStyleSheet(" QHeaderView::section{ background-color: #242424; color:#FFF}");
 
+
+    stopped = false;
+    // instant send of pc load
+    std::thread tload(GetLoad, this);
+    tload.detach();
 }
 MainClient::~MainClient()
 {
 //	workerThread.terminate();
+    stopped = true;
 	delete ui;
 }
 
@@ -390,30 +476,6 @@ void MainClient::UpdateLabel(QString CPU, QString GPU)
     ui->gpuUsage->setText(GPU+"%");
 }
 
-void MainClient::slotReadyRead()
-{
-	QDataStream in(mTcpSocket);
-	in.setVersion(QDataStream::Qt_5_5);
-
-	for(;;) {
-		if (!iNextBlocksize) {
-			if (mTcpSocket->bytesAvailable() < sizeof(quint16)) {
-				break;
-			}
-			in >> iNextBlocksize;
-		}
-
-		if (mTcpSocket->bytesAvailable() < iNextBlocksize) {
-			break;
-		}
-		QTime time;
-		QString str;
-		in >> time >> str;
-
-		ui->listWidget->addItem(time.toString() + " " + str);
-		iNextBlocksize = 0;
-	}
-}
 
 /******************************************************
  *  slotError - процедура для обработки ошибок при
@@ -473,14 +535,8 @@ void MainClient::slotSendToServer()
       }
       //emit(this->messaged());
 }
-void MainClient::slotConnected()
-{
-	ui->status->setText("Подключено");
-
-	//connect(&workerThread, &QThread::started, this, GetLoad);
-	SendStaticInfo();
-	//workerThread.start();
-}
+//void MainClient::slotReadyRead()
+//void MainClient::slotConnected()
 void MainClient::slotDisconected()
 {
     ui->status->setText("Не подключено");
@@ -559,7 +615,10 @@ void MainClient::slotLaunch(){
     process->start(file);
     getTasks();
     process->waitForFinished(30000);
-    qDebug()<<process->exitCode();
+
+    //---------------------------------------------------------------------------------------------------------
+    exitcode = process->exitCode();
+    qDebug() << exitcode;
 }
 void MainClient::slotSetDefault()
 {
