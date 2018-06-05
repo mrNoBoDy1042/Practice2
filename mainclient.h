@@ -7,8 +7,6 @@
 #include <QTime>
 #include <QHostInfo>
 #include <QThread>
-#include "dialog2.h"
-
 #include <windows.h>
 #include <w32api.h>
 #include <tlhelp32.h>
@@ -97,29 +95,20 @@ class MainClient : public QMainWindow
 
     private slots:
         void UpdateLabel(QString CPU, QString GPU);
-//		void GetLoad();
         void getTasks();
         void slotReadyRead();
         void slotError(QAbstractSocket::SocketError);
-        void slotSendToServer();
         void slotConnected();
         void slotDisconected();
         void slotConnect();
-        void slotSender();
-        void slotConfig();
         void slotLaunch();
         void closeEvent (QCloseEvent *event);
         void slotSetDefault();
         void saveSettings();
-        void slotMainPage();
-        void slotProcess();
-        void slotHint(QString);
         void slotAboutToExit();
         void slotButtonHandler();
 
     signals:
-        void closing();
-        void error(QString);
         void reconnect();
         void launch();
         void change(QString, QString);

@@ -23,8 +23,6 @@
 
 #include "mainclient.h"
 #include "ui_mainclient.h"
-#include "dialog2.h"
-#include "systeminfo.h"
 #include <QProcess>
 #include <QDir>
 #include <QMessageBox>
@@ -33,15 +31,6 @@
 #include <QFIle>
 #include <QSettings>
 #include <QCloseEvent>
-
-
-
-
-
-
-
-
-
 
 //---------------------------------------------------------------------------------------------------------
 // MV's changes
@@ -57,6 +46,21 @@
 #define DIV 1024
 #define WIDTH 7
 
+/******************************************************
+ *  CalculateCPULoad - функция для подсчета загруженности
+ * процессора.
+ ******************************************************
+ *   Формальные параметры:
+ *       idleTicks - ;
+ *       totalTicks - .
+ ******************************************************
+ *  Локальные переменные:
+ *       _previousTotalTicks - ;
+ *       _previousIdleTicks - ;
+ *       totalTicksSinceLastTime - ;
+ *       idleTicksSinceLastTime - ;
+ *       ret - .
+ ******************************************************/
 static float CalculateCPULoad(unsigned long long idleTicks, unsigned long long totalTicks)
 {
    static unsigned long long _previousTotalTicks = 0;
@@ -71,12 +75,30 @@ static float CalculateCPULoad(unsigned long long idleTicks, unsigned long long t
    _previousIdleTicks  = idleTicks;
    return ret;
 }
+
+/******************************************************
+ *  FileTimeToInt64 - функция для конвертации из типа
+ * FILETIME в INT64.
+ ******************************************************
+ *   Формальный параметр:
+ *       ft - .
+ ******************************************************/
 static unsigned long long FileTimeToInt64(const FILETIME & ft) {
 	return (((unsigned long long)(ft.dwHighDateTime))<<32)|((unsigned long long)ft.dwLowDateTime);
 }
 // Returns 1.0f for "CPU fully pinned", 0.0f for "CPU idle", or somewhere in between
 // You'll need to call this at regular intervals, since it measures the load between
 // the previous call and the current one.  Returns -1.0 on error.
+
+/******************************************************
+ *  GetCPULoad - функция для получения текущей загруженности
+ *  процессора.
+ ******************************************************
+ *  Локальные переменные:
+ *       idleTime - ;
+ *       kernelTime - ;
+ *       userTime - .
+ ******************************************************/
 float GetCPULoad()
 {
    FILETIME idleTime, kernelTime, userTime;
@@ -94,6 +116,26 @@ typedef int *(*NvAPI_QueryInterface_t)(unsigned int offset);
 typedef int  (*NvAPI_Initialize_t)();
 typedef int  (*NvAPI_EnumPhysicalGPUs_t)(int **handles, int *count);
 typedef int  (*NvAPI_GPU_GetUsages_t)(int *handle, unsigned int *usages);
+
+/******************************************************
+ *  GetLoad - процедура для обработки информации о
+ * загруженности системы.
+ ******************************************************
+ *   Формальный параметр:
+ *       M - .
+ ******************************************************
+ *  Локальные переменные:
+ *       hmod - ;
+ *       NvAPI_QueryInterface - ;
+ *       NvAPI_Initialize - ;
+ *       NvAPI_EnumPhysicalGPUs - ;
+ *       NvAPI_GPU_GetUsages - ;
+ *       gpuCount - ;
+ *       gpuHandles - ;
+ *       gpuUsages - ;
+ *       count - ;
+ *       statex - .
+ ******************************************************/
 void GetLoad(MainClient* M)
 {    //bool nvapi = false;
     HMODULE hmod = LoadLibraryA("nvapi.dll");
@@ -140,7 +182,8 @@ void GetLoad(MainClient* M)
     quint64 count = 0;
     while (!M->stopped)
     {
-        if (M->mTcpSocket->ConnectedState == QAbstractSocket::ConnectedState)
+    emit M->change(QString::number((int)M->dynamicInformation.CPU), QString::number((int)M->dynamicInformation.GPU));
+    if (M->mTcpSocket->state() == QAbstractSocket::ConnectedState)
         {
             // CPU
             M->dynamicInformation.CPU = roundf(GetCPULoad() * 100.0);
@@ -157,7 +200,6 @@ void GetLoad(MainClient* M)
             M->SendInfo(0);
 
             //M->UpdateLabel(QString::number((int)M->dynamicInformation.CPU), QString::number((int)M->dynamicInformation.GPU));
-            emit M->change(QString::number((int)M->dynamicInformation.CPU), QString::number((int)M->dynamicInformation.GPU));
 
             qDebug() << M->dynamicInformation.CPU;
             qDebug() << M->dynamicInformation.GPU;
@@ -190,14 +232,23 @@ void MainClient::GetLoadCycle()
 //            qApp->processEvents(0);
 }
 
-// send
+/******************************************************
+ *  SendInfo - метод для отправки информации на сервер.
+ ******************************************************
+ *   Формальный параметр:
+ *       b - .
+ ******************************************************
+ *  Локальные переменные:
+ *       arrBlock - ;
+ *       out - .
+ ******************************************************/
 void MainClient::SendInfo(char b)
 {
     QByteArray  arrBlock;
     QDataStream out(&arrBlock, QIODevice::WriteOnly);
     out.setVersion(QDataStream::Qt_5_5);
 
-    if (b == 0) // dynamin info
+    if (b == 0) // dynamic info
     {
         out << quint8(0) << (QString)"Dynamic" << dynamicInformation;
     }
@@ -216,8 +267,14 @@ void MainClient::SendInfo(char b)
     mTcpSocket->flush();
 }
 
-
-// get
+/******************************************************
+ *  slotReadyRead - метод для получения сообщений от сервера.
+ ******************************************************
+ *  Локальные переменные:
+ *       in - ;
+ *       iNextBlocksize - ;
+ *       Msg - .
+ ******************************************************/
 void MainClient::slotReadyRead()
 {
     QDataStream in(mTcpSocket);
@@ -251,6 +308,10 @@ void MainClient::slotReadyRead()
     }
 }
 
+/******************************************************
+ *  slotConnected - метод для обработки события при
+ * установлении соединения с сервером.
+ ******************************************************/
 void MainClient::slotConnected()
 {
     ui->status->setText("Подключено");
@@ -262,25 +323,20 @@ void MainClient::slotConnected()
 
 //---------------------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-void LaunchGetTasks(MainClient*)
-{
-    //emit(MainClient::launch());
-}
-
+/******************************************************
+ *  getTasks - метод для получения и вывода запущенных
+ * процессов.
+ ******************************************************
+ *  Локальные переменные:
+ *       procName - ;
+ *       hSnap - ;
+ *       pc32 - ;
+ *       i - ;
+ *       proc - ;
+ *       curHandle - ;
+ *       pmc - ;
+ *       ID - .
+ ******************************************************/
 void MainClient::getTasks()
 {
     qDebug() << "process";
@@ -342,8 +398,9 @@ MainClient::MainClient(QWidget *parent) :
 
     QProcess *process = new QProcess(this);
     QString GetConfig = QApplication::applicationDirPath() + "/../GetConfig.exe";
+    qDebug() << GetConfig;
     process->start(GetConfig);
-    process->waitForFinished(1000);
+    process->waitForFinished(2000);
 
     mTcpSocket = new QTcpSocket(this);
     mTcpSocket->connectToHost(address, port);
@@ -358,9 +415,9 @@ MainClient::MainClient(QWidget *parent) :
     ui->portLine -> setText(QString::number(this -> port));
     ui->portLine->setValidator( new QIntValidator(0, 65535, this) );
 
-    QPushButton *rb[] = {ui->ping, ui->configPB, ui->exitPB, ui->launchPB, ui->reconnectPB};
+    QPushButton *rb[] = {ui->configPB, ui->launchPB, ui->ping};
     int i = 0;
-    while (i <= 4) {
+    while (i <= 2) {
 
         rb[i]->setCheckable(true);
         rb[i]->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
@@ -368,7 +425,12 @@ MainClient::MainClient(QWidget *parent) :
                                    "QPushButton:checked { background-color: #F7D900; color:#242424};");
         i++;
     }
-
+    ui->reconnectPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                                   "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
+                                   "QPushButton:pressed { background-color: #F7D900; color:#242424};");
+    ui->exitPB->setStyleSheet("QPushButton { background-color:#242424; border-style: solid; border-color: #FFF; "
+                              "border-top-width: 0.5px; padding:0px; margin:0px; color:#FFF}"
+                              "QPushButton:pressed { background-color: #F7D900; color:#242424};");
 
     QLabel* labels[6] = {ui->PCName_2, ui->OSName_2, ui->label_19, ui->cpuName_2, ui->gpuName_2, ui->label_2};
 
@@ -401,24 +463,21 @@ MainClient::MainClient(QWidget *parent) :
     connect(ui->setdefPB, SIGNAL(clicked()), SLOT(slotSetDefault()));
     connect(ui->connectPB, SIGNAL(clicked()), SLOT(saveSettings()));
 
-    connect(ui->ping, SIGNAL(clicked()), SLOT(slotMainPage()));
-    connect(ui->launchPB, SIGNAL(clicked()), SLOT(slotProcess()));
+    //connect(ui->ping, SIGNAL(clicked()), SLOT(slotMainPage()));
+    //connect(ui->launchPB, SIGNAL(clicked()), SLOT(slotProcess()));
     connect(mTcpSocket, SIGNAL(disconnected()), SLOT(slotDisconected()));
 	connect(mTcpSocket, SIGNAL(connected()), SLOT(slotConnected()));
 	connect(mTcpSocket, SIGNAL(readyRead()), SLOT(slotReadyRead()));
-	connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
-			   this, SLOT(slotError(QAbstractSocket::SocketError)));
+    connect(mTcpSocket, SIGNAL(error(QAbstractSocket::SocketError)),
+               this, SLOT(slotError(QAbstractSocket::SocketError)));
     connect(ui->exitPB, SIGNAL(clicked()), SLOT(slotAboutToExit()));
-    connect(this, SIGNAL(closing()), SLOT(slotSender()));
-    connect(this, SIGNAL(closing()), SLOT(slotSendToServer()));
-    connect(this, SIGNAL(error(QString)), SLOT(slotHint(QString)));
-    connect(ui->configPB, SIGNAL(clicked()), SLOT(slotConfig()));
     connect(ui->reconnectPB, SIGNAL(clicked()), SLOT(slotConnect()));
     connect(this, SIGNAL(reconnect()), SLOT(slotConnect()));
     connect(ui->pushButton_2, SIGNAL(clicked()), SLOT(slotLaunch()));
     connect(this,SIGNAL(change(QString,QString)),this,SLOT(UpdateLabel(QString,QString)),Qt::BlockingQueuedConnection);
-    //connect(this, SIGNAL(launch()), SLOT(getTasks()));
-    //connect(ui->pushButton, SIGNAL(clicked()), SLOT(on_pushButton_clicked()));
+    connect(ui->configPB, SIGNAL(clicked()), SLOT(slotButtonHandler()));
+    connect(ui->ping, SIGNAL(clicked()), SLOT(slotButtonHandler()));
+    connect(ui->launchPB, SIGNAL(clicked()), SLOT(slotButtonHandler()));
 
     getTasks();
 
@@ -443,6 +502,10 @@ MainClient::MainClient(QWidget *parent) :
     std::thread tload(GetLoad, this);
     tload.detach();
 }
+
+/******************************************************
+ *  ~MainClient - деструктор класса MainClient.
+ ******************************************************/
 MainClient::~MainClient()
 {
 //	workerThread.terminate();
@@ -450,6 +513,16 @@ MainClient::~MainClient()
 	delete ui;
 }
 
+/******************************************************
+ *  copyToQString - метод для конвертации массива в строку.
+ ******************************************************
+ *   Формальный параметр:
+ *       array - .
+ ******************************************************
+ *  Локальные переменные:
+ *       string - ;
+ *       i - .
+ ******************************************************/
 QString MainClient::copyToQString(WCHAR array[])
 {
     QString string;
@@ -463,13 +536,44 @@ QString MainClient::copyToQString(WCHAR array[])
     return string;
 }
 
+/******************************************************
+ *  slotButtonHandler - метод для обработки взаимодействия
+ * с панелью главного меню.
+ ******************************************************
+ *  Локальная переменная:
+ *       obj - .
+ ******************************************************/
 void MainClient::slotButtonHandler()
 {
-//    foreach (QPushButton *b, button) {
-//        b->setChecked(false);
-//    }
+    ui->configPB->setChecked(false);
+    ui->launchPB->setChecked(false);
+    ui->ping->setChecked(false);
+    QObject* obj = sender();
+      if( obj == ui->configPB)
+      {
+         ui->configPB->setChecked(true);
+         ui->stackedWidget->setCurrentIndex(1);
+      }
+      else if( obj == ui->launchPB)
+      {
+         ui->launchPB->setChecked(true);
+         ui->stackedWidget->setCurrentIndex(4);
+      }
+      else if( obj == ui->ping)
+      {
+         ui->ping->setChecked(true);
+         ui->stackedWidget->setCurrentIndex(0);
+      }
 }
 
+/******************************************************
+ *  UpdateLabel - метод для вывода информации о
+ * загруженности компьютера.
+ ******************************************************
+ *   Формальные параметры:
+ *       CPU - ;
+ *       GPU - .
+ ******************************************************/
 void MainClient::UpdateLabel(QString CPU, QString GPU)
 {
     ui->cpuUsage->setText(CPU+"%");
@@ -481,62 +585,30 @@ void MainClient::UpdateLabel(QString CPU, QString GPU)
  *  slotError - процедура для обработки ошибок при
  * подключении к серверу.
  ******************************************************
- *  Формальный параметр:
+ *   Формальный параметр:
+ *       err - .
+ ******************************************************
+ *  Локальная переменная:
  *       strError - строка, хранящая информацию об ошибке.
  ******************************************************/
 void MainClient::slotError(QAbstractSocket::SocketError err)
 {
-    QString strError = QTime::currentTime().toString() + " Error: " + (err == QAbstractSocket::HostNotFoundError ?
-									"The host was not found." :
-									err == QAbstractSocket::RemoteHostClosedError ?
-									"The remote host is closed." :
-									err == QAbstractSocket::ConnectionRefusedError ?
-									"The connection was refused." :
-									QString(mTcpSocket->errorString())
-									);
-	ui->listWidget->addItem(strError);
-    emit error(strError);
+    QString strError = QTime::currentTime().toString() + " Ошибка: " + (err == QAbstractSocket::HostNotFoundError ?
+                                    "Сервер не найден." :
+                                    err == QAbstractSocket::RemoteHostClosedError ?
+                                    "Удаленный сервер закрыт." :
+                                    err == QAbstractSocket::ConnectionRefusedError ?
+                                    "Отказано в соединении." :
+                                    QString(mTcpSocket->errorString())
+                                    );
+    ui->listWidget->addItem(strError);
 }
+
 
 /******************************************************
- *  slotSendToServer - процедура для отправки сообщений
- * на сервер.
- ******************************************************
- *  Формальные параметры:
- *       message - указатель на экземпляр класса QProcess;
- *       obj - путь к исполняемому файлу;
- *       arrBlock - массив байт для отправки сообщения;
- *       Name - имя сервера.
+ *  slotDisconected - метод для вывода сообщения при
+ * отключении от сервера.
  ******************************************************/
-void MainClient::slotSendToServer()
-{
-    QString Message = "";
-    QObject* obj = sender();
-      if( obj == ui->exitPB )
-      {
-         Message = "Program closed by operator";
-      }
-
-      QByteArray  arrBlock;
-      QString Name = QHostInfo::localHostName();
-
-      QDataStream out(&arrBlock, QIODevice::WriteOnly);
-      out.setVersion(QDataStream::Qt_5_5);
-      out << quint16(0) << QTime::currentTime() << Name << Message;
-
-      out.device()->seek(0);
-	  out << quint16(arrBlock.size() - sizeof(quint16));
-
-      mTcpSocket->write(arrBlock);
-
-      if( obj == ui->exitPB or obj == this)
-      {
-         //emit(this->close());
-      }
-      //emit(this->messaged());
-}
-//void MainClient::slotReadyRead()
-//void MainClient::slotConnected()
 void MainClient::slotDisconected()
 {
     ui->status->setText("Не подключено");
@@ -551,14 +623,17 @@ void MainClient::slotConnect(){
     loadSettings();
     mTcpSocket->connectToHost(address, port);
 }
-void MainClient::slotSender(){
-    QObject* obj = sender();
-    //ui->label_2->setText(obj->objectName());
-    qDebug() << obj->objectName();
-}
-void MainClient::slotConfig(){
-  ui->stackedWidget->setCurrentIndex(1);
-}
+
+/******************************************************
+ *  closeEvent - метод для обработки и вывода информации
+ * об ошибках при подключении к серверу.
+ ******************************************************
+ *   Формальный параметр:
+ *       event - .
+ ******************************************************
+ *  Локальная переменная:
+ *       resBtn - .
+ ******************************************************/
 void MainClient::closeEvent (QCloseEvent *event)
 {
     QMessageBox::StandardButton resBtn = QMessageBox::question( this, "Закрыть приложение",
@@ -568,10 +643,13 @@ void MainClient::closeEvent (QCloseEvent *event)
     if (resBtn != QMessageBox::Yes) {
         event->ignore();
     } else {
-        emit(closing());
         event->accept();
     }
 }
+
+/******************************************************
+ *  slotAboutToExit - метод для закрытия формы.
+ ******************************************************/
 void MainClient::slotAboutToExit()
 {
     close();
@@ -581,7 +659,7 @@ void MainClient::slotAboutToExit()
  *  loadSettings - процедура для загрузки данных
  * подключения к серверу.
  ******************************************************
- *  Формальный параметр:
+ *  Локальная переменная:
  *       settings - объект, хранящий настройки подключения;
  ******************************************************/
 void MainClient::loadSettings()
@@ -591,19 +669,11 @@ void MainClient::loadSettings()
 	port = settings.value("current/port", 32094).toInt();
 }
 
-
-void MainClient::slotMainPage(){
-    ui->stackedWidget->setCurrentIndex(0);
-}
-void MainClient::slotProcess(){
-    ui->stackedWidget->setCurrentIndex(4);
-}
-
 /******************************************************
  *  slotLaunch - процедура для запуска и обработки
  * соторнних процессов.
  ******************************************************
- *  Формальные параметры:
+ *  Локальные переменные:
  *       process - указатель на экземпляр класса QProcess;
  *       file - путь к исполняемому файлу.
  ******************************************************/
@@ -611,7 +681,6 @@ void MainClient::slotLaunch(){
 
     QProcess *process = new QProcess(this);
     QString file = QApplication::applicationDirPath() + "/../TestUnit.exe";
-    //qDebug()<<file;
     process->start(file);
     getTasks();
     process->waitForFinished(30000);
@@ -620,6 +689,14 @@ void MainClient::slotLaunch(){
     exitcode = process->exitCode();
     qDebug() << exitcode;
 }
+
+/******************************************************
+ *  slotSetDefault - метод для установки поумолчанию
+ * параметров подключения к серверу.
+ ******************************************************
+ *  Локальныая переменная:
+ *       settings - .
+ ******************************************************/
 void MainClient::slotSetDefault()
 {
     QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
@@ -629,12 +706,16 @@ void MainClient::slotSetDefault()
     ui->portLine->setText(QString::number(this->port));
 
 }
+
+/******************************************************
+ *  saveSettings - метод для сохранения текущих
+ * параметров подключения к серверу.
+ ******************************************************
+ *  Локальные переменные:
+ *       settings - .
+ ******************************************************/
 void MainClient::saveSettings(){
     QSettings settings(m_sSettingsFile, QSettings::NativeFormat);
     settings.setValue("current/port", ui->portLine->text());
     settings.setValue("current/address", ui->addressLine->text());
-    //this->accept();
-}
-void MainClient::slotHint(QString err){
-    //ui->label_2->setText(err);
 }

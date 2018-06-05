@@ -232,12 +232,6 @@ release/moc_mainclient.cpp: ../../../../Qt/5.5/mingw492_32/include/QtWidgets/QMa
 		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostaddress.h \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/QThread \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/qthread.h \
-		dialog2.h \
-		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QDialog \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/QJsonObject \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/qjsonobject.h \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/qjsonvalue.h \
-		mainclient.h \
 		mainclient.h
 	C:\Qt\5.5\mingw492_32\bin\moc.exe $(DEFINES) -D__GNUC__ -DWIN32 -IC:/Qt/5.5/mingw492_32/mkspecs/win32-g++ -IC:/Users/mrNoBoDy/Desktop/Practice2 -IC:/Qt/5.5/mingw492_32/include -IC:/Qt/5.5/mingw492_32/include/QtWidgets -IC:/Qt/5.5/mingw492_32/include/QtGui -IC:/Qt/5.5/mingw492_32/include/QtANGLE -IC:/Qt/5.5/mingw492_32/include/QtNetwork -IC:/Qt/5.5/mingw492_32/include/QtCore mainclient.h -o release\moc_mainclient.cpp
 
@@ -344,10 +338,23 @@ release/moc_login.cpp: ../../../../Qt/5.5/mingw492_32/include/QtWidgets/QDialog 
 		../../../../Qt/5.5/mingw492_32/include/QtCore/qfiledevice.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qvector2d.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qtouchdevice.h \
+		mainclient.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QMainWindow \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qmainwindow.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qtabwidget.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qicon.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/QTcpSocket \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qtcpsocket.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qabstractsocket.h \
+		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QMessageBox \
+		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qmessagebox.h \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/QTime \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/qdatetime.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/QHostInfo \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostinfo.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostaddress.h \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/QThread \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/qthread.h \
 		login.h
 	C:\Qt\5.5\mingw492_32\bin\moc.exe $(DEFINES) -D__GNUC__ -DWIN32 -IC:/Qt/5.5/mingw492_32/mkspecs/win32-g++ -IC:/Users/mrNoBoDy/Desktop/Practice2 -IC:/Qt/5.5/mingw492_32/include -IC:/Qt/5.5/mingw492_32/include/QtWidgets -IC:/Qt/5.5/mingw492_32/include/QtGui -IC:/Qt/5.5/mingw492_32/include/QtANGLE -IC:/Qt/5.5/mingw492_32/include/QtNetwork -IC:/Qt/5.5/mingw492_32/include/QtCore login.h -o release\moc_login.cpp
 
@@ -478,10 +485,23 @@ release/main.o: main.cpp login.h \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/qfiledevice.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qvector2d.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qtouchdevice.h \
+		mainclient.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QMainWindow \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qmainwindow.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qtabwidget.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qicon.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/QTcpSocket \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qtcpsocket.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qabstractsocket.h \
+		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QMessageBox \
+		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qmessagebox.h \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/QTime \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/qdatetime.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/QHostInfo \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostinfo.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostaddress.h \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/QThread \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/qthread.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QApplication \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qapplication.h \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/qcoreapplication.h \
@@ -610,11 +630,6 @@ release/mainclient.o: mainclient.cpp mainclient.h \
 		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostaddress.h \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/QThread \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/qthread.h \
-		dialog2.h \
-		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QDialog \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/QJsonObject \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/qjsonobject.h \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/qjsonvalue.h \
 		ui_mainclient.h \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/QVariant \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QAction \
@@ -674,8 +689,6 @@ release/mainclient.o: mainclient.cpp mainclient.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qtableview.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QVBoxLayout \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QWidget \
-		systeminfo.h \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/QSysInfo \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/QProcess \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/qprocess.h \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/QDir \
@@ -791,10 +804,23 @@ release/login.o: login.cpp login.h \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/qfiledevice.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qvector2d.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qtouchdevice.h \
+		mainclient.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QMainWindow \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qmainwindow.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qtabwidget.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qicon.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/QTcpSocket \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qtcpsocket.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qabstractsocket.h \
+		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QMessageBox \
+		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qmessagebox.h \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/QTime \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/qdatetime.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/QHostInfo \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostinfo.h \
+		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostaddress.h \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/QThread \
+		../../../../Qt/5.5/mingw492_32/include/QtCore/qthread.h \
 		ui_login.h \
 		../../../../Qt/5.5/mingw492_32/include/QtCore/QVariant \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QAction \
@@ -836,24 +862,7 @@ release/login.o: login.cpp login.h \
 		../../../../Qt/5.5/mingw492_32/include/QtGui/qtextoption.h \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QPushButton \
 		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qpushbutton.h \
-		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qabstractbutton.h \
-		mainclient.h \
-		../../../../Qt/5.5/mingw492_32/include/QtNetwork/QTcpSocket \
-		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qtcpsocket.h \
-		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qabstractsocket.h \
-		../../../../Qt/5.5/mingw492_32/include/QtWidgets/QMessageBox \
-		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qmessagebox.h \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/QTime \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/qdatetime.h \
-		../../../../Qt/5.5/mingw492_32/include/QtNetwork/QHostInfo \
-		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostinfo.h \
-		../../../../Qt/5.5/mingw492_32/include/QtNetwork/qhostaddress.h \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/QThread \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/qthread.h \
-		dialog2.h \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/QJsonObject \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/qjsonobject.h \
-		../../../../Qt/5.5/mingw492_32/include/QtCore/qjsonvalue.h
+		../../../../Qt/5.5/mingw492_32/include/QtWidgets/qabstractbutton.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o release\login.o login.cpp
 
 release/moc_mainclient.o: release/moc_mainclient.cpp 

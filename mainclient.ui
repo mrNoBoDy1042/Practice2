@@ -381,7 +381,7 @@ margin:0px;</string>
           <string notr="true"/>
          </property>
          <property name="currentIndex">
-          <number>4</number>
+          <number>1</number>
          </property>
          <widget class="QWidget" name="page_2">
           <widget class="QListWidget" name="listWidget">
