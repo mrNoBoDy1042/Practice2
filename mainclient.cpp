@@ -315,10 +315,9 @@ void MainClient::slotReadyRead()
 void MainClient::slotConnected()
 {
     ui->status->setText("Подключено");
-
-    //connect(&workerThread, &QThread::started, this, GetLoad);
+    QString strInfo = QTime::currentTime().toString() + " Соединение успешно";
+    ui->listWidget->addItem(strInfo);
     SendInfo(1);
-    //workerThread.start();
 }
 
 //---------------------------------------------------------------------------------------------------------
