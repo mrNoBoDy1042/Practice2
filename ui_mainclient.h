@@ -73,9 +73,7 @@ public:
     QLabel *label_21;
     QLabel *gpuUsage;
     QLabel *label_22;
-    QLabel *label_23;
     QLabel *label_24;
-    QTableWidget *tableWidget_2;
     QLabel *label_2;
     QWidget *page_3;
     QLabel *label_4;
@@ -278,7 +276,7 @@ public:
         page_2->setObjectName(QStringLiteral("page_2"));
         listWidget = new QListWidget(page_2);
         listWidget->setObjectName(QStringLiteral("listWidget"));
-        listWidget->setGeometry(QRect(350, 440, 371, 101));
+        listWidget->setGeometry(QRect(10, 440, 711, 101));
         sizePolicy.setHeightForWidth(listWidget->sizePolicy().hasHeightForWidth());
         listWidget->setSizePolicy(sizePolicy);
         frame_4 = new QFrame(page_2);
@@ -368,18 +366,12 @@ public:
         label_22 = new QLabel(page_2);
         label_22->setObjectName(QStringLiteral("label_22"));
         label_22->setGeometry(QRect(10, 20, 711, 21));
-        label_23 = new QLabel(page_2);
-        label_23->setObjectName(QStringLiteral("label_23"));
-        label_23->setGeometry(QRect(10, 410, 321, 21));
         label_24 = new QLabel(page_2);
         label_24->setObjectName(QStringLiteral("label_24"));
-        label_24->setGeometry(QRect(350, 410, 371, 21));
-        tableWidget_2 = new QTableWidget(page_2);
-        tableWidget_2->setObjectName(QStringLiteral("tableWidget_2"));
-        tableWidget_2->setGeometry(QRect(10, 440, 321, 101));
+        label_24->setGeometry(QRect(10, 410, 711, 21));
         label_2 = new QLabel(page_2);
         label_2->setObjectName(QStringLiteral("label_2"));
-        label_2->setGeometry(QRect(300, 410, 47, 13));
+        label_2->setGeometry(QRect(120, 410, 47, 13));
         stackedWidget->addWidget(page_2);
         page_3 = new QWidget();
         page_3->setObjectName(QStringLiteral("page_3"));
@@ -475,7 +467,7 @@ public:
 
         retranslateUi(MainClient);
 
-        stackedWidget->setCurrentIndex(1);
+        stackedWidget->setCurrentIndex(0);
 
 
         QMetaObject::connectSlotsByName(MainClient);
@@ -506,7 +498,6 @@ public:
         label_21->setText(QApplication::translate("MainClient", "<html><head/><body><p>\320\227\320\260\320\263\321\200\321\203\320\266\320\265\320\275\320\275\320\276\321\201\321\202\321\214 \320\262\320\270\320\264\320\265\320\276\320\272\320\260\321\200\321\202\321\213:</p></body></html>", 0));
         gpuUsage->setText(QApplication::translate("MainClient", "\320\241\320\261\320\276\321\200 \320\270\320\275\321\204\320\276\321\200\320\274\320\260\321\206\320\270\320\270", 0));
         label_22->setText(QApplication::translate("MainClient", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt; font-weight:600;\">\320\245\320\260\321\200\320\260\320\272\321\202\320\265\321\200\320\270\321\201\321\202\320\270\320\272\320\260 \320\272\320\276\320\274\320\277\321\214\321\216\321\202\320\265\321\200\320\260</span></p></body></html>", 0));
-        label_23->setText(QApplication::translate("MainClient", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt; font-weight:600;\">\320\237\320\260\320\274\321\217\321\202\321\214 \320\272\320\276\320\274\320\277\321\214\321\216\321\202\320\265\321\200\320\260</span></p></body></html>", 0));
         label_24->setText(QApplication::translate("MainClient", "<html><head/><body><p align=\"center\"><span style=\" font-size:12pt; font-weight:600;\">\320\230\320\275\321\204\320\276\321\200\320\274\320\260\321\206\320\270\321\217 \320\276 \320\277\320\276\320\264\320\272\320\273\321\216\321\207\320\265\320\275\320\270\320\270</span></p></body></html>", 0));
         label_2->setText(QString());
         label_4->setText(QApplication::translate("MainClient", "\320\237\320\260\321\200\320\260\320\274\320\265\321\202\321\200\321\213 \320\277\320\276\320\264\320\272\320\273\321\216\321\207\320\265\320\275\320\270\321\217", 0));
